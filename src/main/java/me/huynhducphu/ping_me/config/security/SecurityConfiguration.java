@@ -28,9 +28,12 @@ public class SecurityConfiguration {
             "/auth/logout",
             "/auth/register",
             "/auth/refresh",
+            "/auth-management/api/v1/admin/login",
 
             // Forget password
             "/auth/forget-password",
+            "/mail-management/api/v1/mails/send-otp",
+            "/mail-management/api/v1/mails/otp-verification",
 
             // API DOCS
             "/swagger-ui/**",

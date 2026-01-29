@@ -70,7 +70,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public OtpVerificationResponse verifyOtp(OtpVerificationRequest request) {
         // check default otp
-        if(request.getOtp().equalsIgnoreCase(defaultOtp))
+        if(request.getOtp().equalsIgnoreCase(defaultOtp) && request.getOtpType() == OtpType.ADMIN_VERIFICATION)
             return OtpVerificationResponse.builder()
                     .isValid(true)
                     .resetPasswordToken(null)
