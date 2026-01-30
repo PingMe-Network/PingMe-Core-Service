@@ -2,14 +2,15 @@ package me.huynhducphu.ping_me.service.music;
 
 import me.huynhducphu.ping_me.dto.request.music.ArtistRequest;
 import me.huynhducphu.ping_me.dto.response.music.ArtistResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
 public interface ArtistService {
-    List<ArtistResponse> getAllArtists();
 
-    List<ArtistResponse> searchArtists(String name);
+    Page<ArtistResponse> getAllArtists(Pageable pageable);
+
+    Page<ArtistResponse> searchArtists(String name, Pageable pageable);
 
     ArtistResponse getArtistById(Long id);
 

@@ -1,6 +1,7 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.dto.request.music.SongRequest;
 import me.huynhducphu.ping_me.dto.request.music.misc.SongArtistRequest;
 import me.huynhducphu.ping_me.dto.response.music.SongResponse;
@@ -18,6 +19,8 @@ import me.huynhducphu.ping_me.service.music.util.AudioUtil;
 import me.huynhducphu.ping_me.service.s3.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -34,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SongServiceImpl implements SongService {
@@ -52,13 +56,12 @@ public class SongServiceImpl implements SongService {
     private final S3Service s3Service;
     private final CurrentUserProvider currentUserProvider;
 
-    @Override // Nhớ thêm Override nếu hàm này có trong interface
-    public List<SongResponseWithAllAlbum> getAllSongs() {
-        // Cách viết hiện đại dùng Stream
-        return songRepository.findAll().stream()
-                .map(this::mapToSongResponseWithAllAlbums) // Gọi hàm map ở dưới
-                .collect(Collectors.toList());
+    @Override
+    public Page<SongResponseWithAllAlbum> getAllSongs(Pageable pageable) {
+        Page<Song> songPage = songRepository.findAll(pageable);
+        return songPage.map(this::mapToSongResponseWithAllAlbums);
     }
+
 
 
     @Override
@@ -72,62 +75,46 @@ public class SongServiceImpl implements SongService {
     }
 
     @Override
-    public List<SongResponse> getSongByTitle(String title) {
-        //Lấy danh sách bài hát từ DB theo title (case-insensitive)
-        List<Song> songs = songRepository.findSongsByTitleContainingIgnoreCase(title);
+    public Page<SongResponse> getSongByTitle(String title, Pageable pageable) {
+        Page<Song> songs = songRepository.findSongsByTitleContainingIgnoreCase(title, pageable);
 
-        return flattenSongsWithAlbums(songs);
+        List<SongResponse> content = flattenSongsWithAlbums(songs.getContent());
+        return new PageImpl<>(content, pageable, songs.getTotalElements());
     }
 
+
     @Override
-    public List<SongResponseWithAllAlbum> getSongByGenre(Long id) { // Hoặc nhận thẳng Long genreId
+    public Page<SongResponseWithAllAlbum> getSongByGenre(Long id, Pageable pageable) {
         if (id == null) {
             throw new RuntimeException("Genre ID không được trống");
         }
 
-        // Gọi hàm vừa viết - Chỉ tốn đúng 1 query
-        List<Song> songs = songRepository.findSongsByGenreId(id);
-
-        return songs.stream()
-                .map(this::mapToSongResponseWithAllAlbums) // Gọi hàm map ở dưới
-                .collect(Collectors.toList());
+        Page<Song> songs = songRepository.findSongsByGenreId(id, pageable);
+        return songs.map(this::mapToSongResponseWithAllAlbums);
     }
 
+
     @Override
-    public List<SongResponseWithAllAlbum> getSongByAlbum(Long id) {
+    public Page<SongResponseWithAllAlbum> getSongByAlbum(Long id, Pageable pageable) {
         if (id == null) {
             throw new RuntimeException("Album ID không được trống");
         }
 
-        // Tìm Album theo ID
-        Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Album với ID: " + id));
-
-        // Lấy danh sách bài hát từ Album
-        Set<Song> songs = album.getSongs();
-
-        return songs.stream()
-                .map(this::mapToSongResponseWithAllAlbums) // Gọi hàm map ở dưới
-                .collect(Collectors.toList());
-
+        Page<Song> songs = songRepository.findSongsByAlbumId(id, pageable);
+        return songs.map(this::mapToSongResponseWithAllAlbums);
     }
 
+
     @Override
-    public List<SongResponseWithAllAlbum> getSongsByArtist(Long artistId) {
+    public Page<SongResponseWithAllAlbum> getSongsByArtist(Long artistId, Pageable pageable) {
         if (artistId == null) {
             throw new RuntimeException("Artist ID không được trống");
         }
 
-        // Lấy danh sách bài hát từ Artist thông qua SongArtistRole
-        List<SongArtistRole> artistRoles = songArtistRoleRepository.findSongArtistRolesByArtist_Id(artistId);
-        Set<Song> songs = artistRoles.stream()
-                .map(SongArtistRole::getSong)
-                .collect(Collectors.toSet());
-
-        return songs.stream()
-                .map(this::mapToSongResponseWithAllAlbums) // Gọi hàm map ở dưới
-                .collect(Collectors.toList());
+        Page<Song> songs = songRepository.findSongsByArtistId(artistId, pageable);
+        return songs.map(this::mapToSongResponseWithAllAlbums);
     }
+
 
     // Cho phép truyền số lượng bài muốn lấy
     public List<SongResponseWithAllAlbum> getTopPlayedSongs(int limit) {
@@ -164,13 +151,19 @@ public class SongServiceImpl implements SongService {
         // 3. Upload File Nhạc lên S3
         File compressedFile = null;
         try {
-            // A. Tính duration (Tính trên file GỐC musicFile cho nhanh, ko cần đợi nén xong)
-            int calculatedDuration = audioUtil.getDurationFromMusicFile(musicFile);
-            if (calculatedDuration <= 0) {
-                throw new RuntimeException("File nhạc lỗi hoặc không xác định được độ dài");
+            int finalDuration = 0;
+            try {
+                finalDuration = audioUtil.getDurationFromMusicFile(musicFile);
+            } catch (Exception e) {
+                log.error("Backend không đọc được duration file: " + e.getMessage());
             }
-            song.setDuration(calculatedDuration);
-
+            if (finalDuration <= 0 && dto.getDuration() > 0) {
+                finalDuration = dto.getDuration();
+            }
+            if (finalDuration <= 0) {
+                finalDuration = 0;
+            }
+            song.setDuration(finalDuration);
             // C. Tạo tên file mới (Luôn là .mp3 vì mình nén sang mp3)
             String audioFileName = UUID.randomUUID() + ".mp3";
 
@@ -179,7 +172,7 @@ public class SongServiceImpl implements SongService {
                     musicFile,
                     "music/song",
                     audioFileName,
-                    true,
+                    false,
                     MAX_AUDIO_SIZE,
                     MediaType.AUDIO
             );

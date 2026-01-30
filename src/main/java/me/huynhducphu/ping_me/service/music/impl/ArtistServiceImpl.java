@@ -7,13 +7,13 @@ import me.huynhducphu.ping_me.model.music.Artist;
 import me.huynhducphu.ping_me.repository.jpa.music.ArtistRepository;
 import me.huynhducphu.ping_me.service.music.ArtistService;
 import me.huynhducphu.ping_me.service.s3.S3Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,17 +25,15 @@ public class ArtistServiceImpl implements ArtistService {
     private static final Long MAX_IMG_SIZE = 5L * 1024L * 1024L; // 5MB
 
     @Override
-    public List<ArtistResponse> getAllArtists() {
-        return artistRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<ArtistResponse> getAllArtists(Pageable pageable) {
+        Page<Artist> artistPage = artistRepository.findAll(pageable);
+        return artistPage.map(this::mapToResponse);
     }
 
     @Override
-    public List<ArtistResponse> searchArtists(String name) {
-        return artistRepository.findByNameContainingIgnoreCase(name).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<ArtistResponse> searchArtists(String name, Pageable pageable) {
+        Page<Artist> artistPage = artistRepository.findByNameContainingIgnoreCase(name, pageable);
+        return artistPage.map(this::mapToResponse);
     }
 
     @Override

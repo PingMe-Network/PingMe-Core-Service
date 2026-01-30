@@ -9,12 +9,13 @@ import me.huynhducphu.ping_me.repository.jpa.music.AlbumRepository;
 import me.huynhducphu.ping_me.repository.jpa.music.ArtistRepository;
 import me.huynhducphu.ping_me.service.music.AlbumService;
 import me.huynhducphu.ping_me.service.s3.S3Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,11 +27,9 @@ public class AlbumServiceImpl implements AlbumService {
     private final S3Service s3Service;
 
     @Override
-    public List<AlbumResponse> getAllAlbums() {
-        return albumRepository.findAll()
-                .stream()
-                .map(this::mapToResponse) // Tách hàm map ra cho gọn
-                .toList();
+    public Page<AlbumResponse> getAllAlbums(Pageable pageable) {
+         Page<Album> albumPage = albumRepository.findAll(pageable);
+         return albumPage.map(this::mapToResponse);
     }
 
     @Override
@@ -41,11 +40,9 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public List<AlbumResponse> getAlbumByTitleContainIgnoreCase(String title) {
-        List<Album> albums = albumRepository.findAlbumsByTitleContainingIgnoreCase(title);
-        return albums.stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<AlbumResponse> getAlbumByTitleContainIgnoreCase(String title, Pageable pageable) {
+        Page<Album> albums = albumRepository.findAlbumsByTitleContainingIgnoreCase(title, pageable);
+        return albums.map(this::mapToResponse);
     }
 
     @Override

@@ -8,15 +8,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
+import me.huynhducphu.ping_me.dto.base.PageResponse;
 import me.huynhducphu.ping_me.dto.request.music.AlbumRequest;
 import me.huynhducphu.ping_me.dto.response.music.AlbumResponse;
 import me.huynhducphu.ping_me.service.music.AlbumService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Tag(
         name = "Albums",
@@ -26,7 +29,6 @@ import java.util.List;
 @RequestMapping("/albums")
 @RequiredArgsConstructor
 public class AlbumController {
-
     private final AlbumService albumService;
 
     // ======================= GET ALL =======================
@@ -35,8 +37,11 @@ public class AlbumController {
             description = "API trả về toàn bộ album chưa bị xoá trong hệ thống"
     )
     @GetMapping("/all")
-    public ResponseEntity<ApiResponse<List<AlbumResponse>>> getAllAlbums() {
-        return ResponseEntity.ok(new ApiResponse<>(albumService.getAllAlbums()));
+    public ResponseEntity<ApiResponse<PageResponse<AlbumResponse>>> getAllAlbums(
+            @PageableDefault(size = 20, sort = "title", direction = Sort.Direction.ASC)Pageable pageable
+    ) {
+        Page<AlbumResponse> page = albumService.getAllAlbums(pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
     }
 
     // ======================= GET BY ID =======================
@@ -58,11 +63,13 @@ public class AlbumController {
             description = "Tìm các album có tiêu đề chứa từ khoá (không phân biệt hoa thường)"
     )
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<AlbumResponse>>> searchAlbums(
+    public ResponseEntity<ApiResponse<PageResponse<AlbumResponse>>> searchAlbums(
             @Parameter(description = "Từ khoá tìm kiếm theo tiêu đề", example = "Love")
-            @RequestParam String title
+            @RequestParam String title,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(new ApiResponse<>(albumService.getAlbumByTitleContainIgnoreCase(title)));
+        Page<AlbumResponse> page = albumService.getAlbumByTitleContainIgnoreCase(title, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
     }
 
     // ======================= CREATE =======================
