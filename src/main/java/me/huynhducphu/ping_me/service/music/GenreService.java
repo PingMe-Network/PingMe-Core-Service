@@ -5,8 +5,6 @@ import me.huynhducphu.ping_me.dto.response.music.GenreResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-
 /**
  * @author Le Tran Gia Huy
  * @created 22/11/2025 - 9:13 PM

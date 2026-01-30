@@ -21,8 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
 @Tag(
         name = "Albums",
         description = "Quản lý album âm nhạc: tạo mới, cập nhật, tìm kiếm, xoá mềm, xoá cứng và khôi phục"

@@ -19,8 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Tag(
         name = "Genres",
         description = "Quản lý thể loại âm nhạc: tạo mới, cập nhật, xoá mềm, xoá cứng và khôi phục"

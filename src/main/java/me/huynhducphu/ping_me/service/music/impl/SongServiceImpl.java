@@ -1,6 +1,7 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.dto.request.music.SongRequest;
 import me.huynhducphu.ping_me.dto.request.music.misc.SongArtistRequest;
 import me.huynhducphu.ping_me.dto.response.music.SongResponse;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SongServiceImpl implements SongService {
@@ -149,32 +151,20 @@ public class SongServiceImpl implements SongService {
         // 3. Upload File Nhạc lên S3
         File compressedFile = null;
         try {
-            // A. Tính duration (Tính trên file GỐC musicFile cho nhanh, ko cần đợi nén xong)
             int finalDuration = 0;
-
-            // Bước 1: Thử để Backend tự tính từ file (Logic cũ)
             try {
                 finalDuration = audioUtil.getDurationFromMusicFile(musicFile);
             } catch (Exception e) {
-                // Chỉ log warning, không throw exception làm chết chương trình
-                System.err.println("Backend không đọc được duration file: " + e.getMessage());
+                log.error("Backend không đọc được duration file: " + e.getMessage());
             }
-            // Bước 2: Nếu Backend tính ra <= 0 (lỗi), thì lấy giá trị từ Frontend gửi lên (Fallback)
             if (finalDuration <= 0 && dto.getDuration() > 0) {
                 finalDuration = dto.getDuration();
             }
-            // Bước 3: Validate cuối cùng
             if (finalDuration <= 0) {
-                // Tùy chọn: Vẫn cho phép tạo bài hát kể cả khi không có duration (set = 0)
-                // Thay vì ném RuntimeException chặn người dùng
                 finalDuration = 0;
-
-                // Nếu muốn chặt chẽ thì uncomment dòng dưới:
-                // throw new RuntimeException("Không xác định được thời lượng bài hát (cả từ file và request)");
+                throw new RuntimeException("Không xác định được thời lượng bài hát (cả từ file và request)");
             }
-
             song.setDuration(finalDuration);
-
             // C. Tạo tên file mới (Luôn là .mp3 vì mình nén sang mp3)
             String audioFileName = UUID.randomUUID() + ".mp3";
 
