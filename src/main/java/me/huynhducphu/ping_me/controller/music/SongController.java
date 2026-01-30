@@ -8,10 +8,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
+import me.huynhducphu.ping_me.dto.base.PageResponse;
 import me.huynhducphu.ping_me.dto.request.music.SongRequest;
 import me.huynhducphu.ping_me.dto.response.music.SongResponse;
 import me.huynhducphu.ping_me.dto.response.music.SongResponseWithAllAlbum;
 import me.huynhducphu.ping_me.service.music.SongService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,8 +55,13 @@ public class SongController {
             description = "Trả về danh sách bài hát kèm album, artist, genre"
     )
     @GetMapping("/all")
-    public ResponseEntity<ApiResponse<List<SongResponseWithAllAlbum>>> getAllSongs() {
-        return ResponseEntity.ok(new ApiResponse<>(songService.getAllSongs()));
+    public ResponseEntity<ApiResponse<PageResponse<SongResponseWithAllAlbum>>> getAllSongs(
+            @PageableDefault(size = 20, sort = "title", direction = Sort.Direction.ASC)Pageable pageable
+    ) {
+        var page = songService.getAllSongs(pageable);
+        var pageResponse = new PageResponse<>(page);
+
+        return ResponseEntity.ok(new ApiResponse<>(pageResponse));
     }
 
     // ========================= SEARCH BY TITLE =========================
@@ -60,12 +70,14 @@ public class SongController {
             description = "Tìm kiếm bài hát gần đúng theo tiêu đề"
     )
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<SongResponse>>> getSongByTitle(
-            @Parameter(description = "Tên bài hát", example = "Love")
-            @RequestParam("title") String title
+    public ResponseEntity<ApiResponse<PageResponse<SongResponse>>> getSongByTitle(
+            @RequestParam("title") String title,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(new ApiResponse<>(songService.getSongByTitle(title)));
+        Page<SongResponse> page = songService.getSongByTitle(title, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
     }
+
 
     // ========================= SEARCH BY ALBUM =========================
     @Operation(
@@ -73,12 +85,14 @@ public class SongController {
             description = "Trả về danh sách bài hát thuộc một album"
     )
     @GetMapping("/search-by-album")
-    public ResponseEntity<ApiResponse<List<SongResponseWithAllAlbum>>> getSongByAlbum(
-            @Parameter(description = "ID album", example = "5")
-            @RequestParam("id") Long albumId
+    public ResponseEntity<ApiResponse<PageResponse<SongResponseWithAllAlbum>>> getSongByAlbum(
+            @RequestParam("id") Long albumId,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(new ApiResponse<>(songService.getSongByAlbum(albumId)));
+        Page<SongResponseWithAllAlbum> page = songService.getSongByAlbum(albumId, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
     }
+
 
     // ========================= SEARCH BY ARTIST =========================
     @Operation(
@@ -86,12 +100,28 @@ public class SongController {
             description = "Trả về tất cả bài hát của một nghệ sĩ"
     )
     @GetMapping("/search-by-artist")
-    public ResponseEntity<ApiResponse<List<SongResponseWithAllAlbum>>> getSongsByArtist(
-            @Parameter(description = "ID nghệ sĩ", example = "3")
-            @RequestParam("id") Long artistId
+    public ResponseEntity<ApiResponse<PageResponse<SongResponseWithAllAlbum>>> getSongsByArtist(
+            @RequestParam("id") Long artistId,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(new ApiResponse<>(songService.getSongsByArtist(artistId)));
+        Page<SongResponseWithAllAlbum> page = songService.getSongsByArtist(artistId, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
     }
+
+    // ========================= SEARCH BY GENRE =========================
+    @Operation(
+            summary = "Lấy bài hát theo thể loại",
+            description = "Trả về danh sách bài hát thuộc một genre"
+    )
+    @GetMapping("/genre")
+    public ResponseEntity<ApiResponse<PageResponse<SongResponseWithAllAlbum>>> getByGenre(
+            @RequestParam("id") Long genreId,
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        Page<SongResponseWithAllAlbum> page = songService.getSongByGenre(genreId, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
+    }
+
 
     // ========================= TOP PLAYED =========================
     @Operation(
@@ -104,19 +134,6 @@ public class SongController {
             @PathVariable int number
     ) {
         return ResponseEntity.ok(new ApiResponse<>(songService.getTopPlayedSongs(number)));
-    }
-
-    // ========================= SEARCH BY GENRE =========================
-    @Operation(
-            summary = "Lấy bài hát theo thể loại",
-            description = "Trả về danh sách bài hát thuộc một genre"
-    )
-    @GetMapping("/genre")
-    public ResponseEntity<ApiResponse<List<SongResponseWithAllAlbum>>> getByGenre(
-            @Parameter(description = "ID thể loại", example = "2")
-            @RequestParam("id") Long genreId
-    ) {
-        return ResponseEntity.ok(new ApiResponse<>(songService.getSongByGenre(genreId)));
     }
 
     // ========================= SAVE SONG =========================

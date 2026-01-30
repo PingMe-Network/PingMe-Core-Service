@@ -7,12 +7,12 @@ import me.huynhducphu.ping_me.dto.response.music.misc.GenreDto;
 import me.huynhducphu.ping_me.model.music.Genre;
 import me.huynhducphu.ping_me.repository.jpa.music.GenreRepository;
 import me.huynhducphu.ping_me.service.music.GenreService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Le Tran Gia Huy
@@ -34,10 +34,9 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    public List<GenreResponse> getAllGenres() {
-        return genreRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<GenreResponse> getAllGenres(Pageable pageable) {
+        Page<Genre> genres = genreRepository.findAll(pageable);
+        return genres.map(this::mapToResponse);
     }
 
     @Override

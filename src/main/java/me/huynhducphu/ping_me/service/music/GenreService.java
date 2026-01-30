@@ -2,6 +2,8 @@ package me.huynhducphu.ping_me.service.music;
 
 import me.huynhducphu.ping_me.dto.request.music.GenreRequest;
 import me.huynhducphu.ping_me.dto.response.music.GenreResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -14,7 +16,7 @@ import java.util.List;
 public interface GenreService {
     GenreResponse getGenreById(Long id);
 
-    List<GenreResponse> getAllGenres();
+    Page<GenreResponse> getAllGenres(Pageable pageable);
 
     GenreResponse createGenre(GenreRequest request);
 
