@@ -2,9 +2,9 @@ package me.huynhducphu.ping_me.handler;
 
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.response.user.UserSummaryResponse;
-import me.huynhducphu.ping_me.service.friendship.event.FriendshipEvent;
 import me.huynhducphu.ping_me.dto.ws.friendship.FriendshipEventPayload;
 import me.huynhducphu.ping_me.model.User;
+import me.huynhducphu.ping_me.service.friendship.event.FriendshipEvent;
 import org.modelmapper.ModelMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;

@@ -1,8 +1,10 @@
 package me.huynhducphu.ping_me.service.authentication;
 
-import me.huynhducphu.ping_me.dto.request.authentication.*;
-import me.huynhducphu.ping_me.service.authentication.model.AuthResultWrapper;
+import me.huynhducphu.ping_me.dto.request.authentication.LoginRequest;
+import me.huynhducphu.ping_me.dto.request.authentication.RegisterRequest;
+import me.huynhducphu.ping_me.dto.request.authentication.SubmitSessionMetaRequest;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
+import me.huynhducphu.ping_me.service.authentication.model.AuthResultWrapper;
 import org.springframework.http.ResponseCookie;
 
 /**

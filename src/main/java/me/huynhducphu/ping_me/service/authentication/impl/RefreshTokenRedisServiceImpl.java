@@ -1,6 +1,5 @@
 package me.huynhducphu.ping_me.service.authentication.impl;
 
-import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.request.authentication.SubmitSessionMetaRequest;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserDeviceMetaResponse;
 import me.huynhducphu.ping_me.model.common.DeviceMeta;

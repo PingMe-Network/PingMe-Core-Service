@@ -1,7 +1,7 @@
 package me.huynhducphu.ping_me.repository.jpa.reels;
 
-import me.huynhducphu.ping_me.model.reels.ReelCommentReaction;
 import me.huynhducphu.ping_me.model.constant.ReactionType;
+import me.huynhducphu.ping_me.model.reels.ReelCommentReaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

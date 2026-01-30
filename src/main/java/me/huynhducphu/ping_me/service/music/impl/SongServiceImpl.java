@@ -12,11 +12,11 @@ import me.huynhducphu.ping_me.dto.response.music.misc.GenreDto;
 import me.huynhducphu.ping_me.model.constant.ArtistRole;
 import me.huynhducphu.ping_me.model.music.*;
 import me.huynhducphu.ping_me.repository.jpa.music.*;
-import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.service.ffmpeg.constants.MediaType;
 import me.huynhducphu.ping_me.service.music.SongService;
 import me.huynhducphu.ping_me.service.music.util.AudioUtil;
 import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
@@ -30,11 +30,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -61,7 +59,6 @@ public class SongServiceImpl implements SongService {
         Page<Song> songPage = songRepository.findAll(pageable);
         return songPage.map(this::mapToSongResponseWithAllAlbums);
     }
-
 
 
     @Override
