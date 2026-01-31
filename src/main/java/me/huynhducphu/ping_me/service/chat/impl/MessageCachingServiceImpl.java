@@ -56,10 +56,7 @@ public class MessageCachingServiceImpl implements MessageCachingService {
         String key = buildKey(roomId);
 
         try {
-            List<MessageResponse> reversedMessagesOrder =
-                    copyAndReverseListMessageResponse(messages);
-
-            for (MessageResponse m : reversedMessagesOrder) {
+            for (MessageResponse m : messages) {
                 String json = objectMapper.writeValueAsString(m);
                 redisTemplate.opsForList().leftPush(key, json);
             }
@@ -198,7 +195,7 @@ public class MessageCachingServiceImpl implements MessageCachingService {
             List<MessageResponse> messages
     ) {
         var copy = new ArrayList<>(messages);
-        Collections.reverse(messages);
+        Collections.reverse(copy);
         return copy;
     }
 

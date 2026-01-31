@@ -1,80 +1,48 @@
 package me.huynhducphu.ping_me.config.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import me.huynhducphu.ping_me.model.common.DeviceMeta;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisPassword;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.*;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Admin 8/16/2025
- **/
 @Configuration
 public class RedisConfiguration {
 
-    @Value("${redis.host}")
-    private String redisHost;
-
-    @Value("${redis.port}")
-    private int redisPort;
-
-    @Value("${redis.password}")
-    private String redisPassword;
-
-    // =====================================================================
-    // Kết nối tới Redis
-    //    - Định nghĩa RedisConnectionFactory với host, port, password
-    //    - Bean này dùng chung cho RedisTemplate & Spring Cache
-    // =====================================================================
-    @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration serverConfig =
-                new RedisStandaloneConfiguration(redisHost, redisPort);
-
-        if (!redisPassword.isBlank()) {
-            serverConfig.setPassword(RedisPassword.of(redisPassword));
-        }
-
-        return new LettuceConnectionFactory(serverConfig);
-    }
-
     // =========================================================
-    // RedisTemplate cho phiên đăng nhập
+    // 1RedisTemplate cho caching phiên đăng nhập
     // =========================================================
-    @Bean
-    public RedisTemplate<String, DeviceMeta> redisSessionMetaTemplate(
+    @Bean(name = "redisDeviceMetaTemplate")
+    public RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate(
             RedisConnectionFactory cf,
             ObjectMapper om
     ) {
-        var keySer = new StringRedisSerializer();
-        var valSer = new Jackson2JsonRedisSerializer<>(om, DeviceMeta.class);
-
         RedisTemplate<String, DeviceMeta> tpl = new RedisTemplate<>();
         tpl.setConnectionFactory(cf);
+
+        var keySer = new StringRedisSerializer();
+        var valSer = new JacksonJsonRedisSerializer<>(om, DeviceMeta.class);
+
         tpl.setKeySerializer(keySer);
         tpl.setHashKeySerializer(keySer);
         tpl.setValueSerializer(valSer);
         tpl.setHashValueSerializer(valSer);
+
+        tpl.afterPropertiesSet();
         return tpl;
     }
 
     // =========================================================
-    // RedisTemplate cho message cache
+    // RedisTemplate cho caching tin nhắn
     // =========================================================
     @Bean(name = "redisMessageStringTemplate")
     public RedisTemplate<String, String> redisMessageStringTemplate(
@@ -84,6 +52,27 @@ public class RedisConfiguration {
         tpl.setConnectionFactory(cf);
 
         var stringSer = new StringRedisSerializer();
+        var valSer = new JacksonJsonRedisSerializer<>(String.class);
+
+        tpl.setKeySerializer(stringSer);
+        tpl.setHashKeySerializer(stringSer);
+        tpl.setValueSerializer(valSer);
+        tpl.setHashValueSerializer(valSer);
+
+        tpl.afterPropertiesSet();
+        return tpl;
+    }
+
+    // =========================================================
+    // RedisTemplate cho caching lượt nghe nhạc
+    // =========================================================
+    @Bean(name = "redisPlayCountTemplate")
+    public RedisTemplate<String, String> redisPlayCountTemplate(RedisConnectionFactory cf) {
+        RedisTemplate<String, String> tpl = new RedisTemplate<>();
+        tpl.setConnectionFactory(cf);
+
+        var stringSer = new StringRedisSerializer();
+
         tpl.setKeySerializer(stringSer);
         tpl.setHashKeySerializer(stringSer);
         tpl.setValueSerializer(stringSer);
@@ -94,15 +83,18 @@ public class RedisConfiguration {
     }
 
     // =========================================================
-    // RedisTemplate cho lượt nghe nhạc
+    // RedisTemplate cho caching những bài nhạc
     // =========================================================
     @Bean(name = "redisSongHistoryTemplate")
-    public RedisTemplate<String, Object> redisSongHistoryTemplate(RedisConnectionFactory cf, ObjectMapper om) {
+    public RedisTemplate<String, Object> redisSongHistoryTemplate(
+            RedisConnectionFactory cf,
+            ObjectMapper om
+    ) {
         RedisTemplate<String, Object> tpl = new RedisTemplate<>();
         tpl.setConnectionFactory(cf);
 
         var keySer = new StringRedisSerializer();
-        var valSer = new GenericJackson2JsonRedisSerializer(om);
+        var valSer = new GenericJacksonJsonRedisSerializer(om);
 
         tpl.setKeySerializer(keySer);
         tpl.setHashKeySerializer(keySer);
@@ -113,11 +105,8 @@ public class RedisConfiguration {
         return tpl;
     }
 
-
     // =====================================================================
-    // Cấu hình Spring Cache với Redis
-    //    - Thiết lập thời gian sống mặc định cho cache (TTL)
-    //    - Chỉ áp dụng cho các cache dùng annotation (@Cacheable, @CacheEvict...)
+    // 3. Cấu hình Spring Cache (Default Config)
     // =====================================================================
     @Bean
     public RedisCacheConfiguration cacheConfiguration(ObjectMapper om) {
@@ -130,16 +119,14 @@ public class RedisConfiguration {
                 .serializeValuesWith(
                         RedisSerializationContext
                                 .SerializationPair
-                                .fromSerializer(new GenericJackson2JsonRedisSerializer(om))
+                                .fromSerializer(new GenericJacksonJsonRedisSerializer(om))
                 )
                 .entryTtl(Duration.ofMinutes(15))
                 .disableCachingNullValues();
     }
 
     // =====================================================================
-    // Khởi tạo CacheManager sử dụng Redis
-    //    - Quản lý cache thông qua Spring Cache (annotation)
-    //    - Tự động áp dụng các cấu hình phía trên cho toàn bộ cache
+    // 4. Khởi tạo CacheManager
     // =====================================================================
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory factory, RedisCacheConfiguration baseCfg) {

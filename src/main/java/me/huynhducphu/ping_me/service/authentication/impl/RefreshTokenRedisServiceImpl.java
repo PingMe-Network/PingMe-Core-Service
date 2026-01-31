@@ -24,15 +24,15 @@ import java.util.Set;
 public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
 
 
-    private final RedisTemplate<String, DeviceMeta> redisSessionMetaTemplate;
+    private final RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate;
     private final ModelMapper modelMapper;
 
     public RefreshTokenRedisServiceImpl(
-            @Qualifier("redisSessionMetaTemplate")
-            RedisTemplate<String, DeviceMeta> redisSessionMetaTemplate,
+            @Qualifier("redisDeviceMetaTemplate")
+            RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate,
             ModelMapper modelMapper
     ) {
-        this.redisSessionMetaTemplate = redisSessionMetaTemplate;
+        this.redisDeviceMetaTemplate = redisDeviceMetaTemplate;
         this.modelMapper = modelMapper;
     }
 
@@ -51,20 +51,20 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
                 Instant.now().toString()
         );
 
-        redisSessionMetaTemplate.opsForValue().set(sessionId, deviceMeta, expire);
+        redisDeviceMetaTemplate.opsForValue().set(sessionId, deviceMeta, expire);
     }
 
     @Override
     public List<CurrentUserDeviceMetaResponse> getAllDeviceMetas(String userId, String currentRefreshToken) {
         String keyPattern = "auth::refresh_token:" + userId + ":*";
-        Set<String> keys = redisSessionMetaTemplate.keys(keyPattern);
+        Set<String> keys = redisDeviceMetaTemplate.keys(keyPattern);
 
         if (keys == null || keys.isEmpty()) return Collections.emptyList();
         String currentTokenHash = DigestUtils.sha256Hex(currentRefreshToken);
 
         List<CurrentUserDeviceMetaResponse> sessionMetas = new ArrayList<>();
         for (String key : keys) {
-            DeviceMeta meta = redisSessionMetaTemplate.opsForValue().get(key);
+            DeviceMeta meta = redisDeviceMetaTemplate.opsForValue().get(key);
             if (meta == null) continue;
 
             String keyHash = key.substring(key.lastIndexOf(":") + 1);
@@ -80,12 +80,12 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
 
     @Override
     public void deleteRefreshToken(String token, String userId) {
-        redisSessionMetaTemplate.delete(buildKey(token, userId));
+        redisDeviceMetaTemplate.delete(buildKey(token, userId));
     }
 
     @Override
     public void deleteRefreshToken(String key) {
-        redisSessionMetaTemplate.delete(key);
+        redisDeviceMetaTemplate.delete(key);
     }
 
     // =====================================
@@ -93,7 +93,7 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
     // =====================================
     @Override
     public boolean validateToken(String token, String userId) {
-        return redisSessionMetaTemplate.hasKey(buildKey(token, userId));
+        return redisDeviceMetaTemplate.hasKey(buildKey(token, userId));
     }
 
     private String buildKey(String token, String userId) {

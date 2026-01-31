@@ -1,6 +1,5 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.dto.request.music.SongRequest;
 import me.huynhducphu.ping_me.dto.request.music.misc.SongArtistRequest;
@@ -17,7 +16,6 @@ import me.huynhducphu.ping_me.service.music.SongService;
 import me.huynhducphu.ping_me.service.music.util.AudioUtil;
 import me.huynhducphu.ping_me.service.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -37,7 +35,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SongServiceImpl implements SongService {
 
     private final SongRepository songRepository;
@@ -47,12 +44,28 @@ public class SongServiceImpl implements SongService {
     private final SongArtistRoleRepository songArtistRoleRepository;
     private final AudioUtil audioUtil;
     private final SongPlayHistoryRepository songPlayHistoryRepository;
-
-    @Autowired
-    @Qualifier("redisMessageStringTemplate")
-    private RedisTemplate<String, String> redis;
+    private final RedisTemplate<String, String> redis;
     private final S3Service s3Service;
     private final CurrentUserProvider currentUserProvider;
+
+    public SongServiceImpl(
+            SongRepository songRepository, ArtistRepository artistRepository,
+            AlbumRepository albumRepository, GenreRepository genreRepository,
+            SongArtistRoleRepository songArtistRoleRepository,
+            AudioUtil audioUtil, SongPlayHistoryRepository songPlayHistoryRepository,
+            @Qualifier("redisPlayCountTemplate") RedisTemplate<String, String> redis,
+            S3Service s3Service, CurrentUserProvider currentUserProvider) {
+        this.songRepository = songRepository;
+        this.artistRepository = artistRepository;
+        this.albumRepository = albumRepository;
+        this.genreRepository = genreRepository;
+        this.songArtistRoleRepository = songArtistRoleRepository;
+        this.audioUtil = audioUtil;
+        this.songPlayHistoryRepository = songPlayHistoryRepository;
+        this.redis = redis;
+        this.s3Service = s3Service;
+        this.currentUserProvider = currentUserProvider;
+    }
 
     @Override
     public Page<SongResponseWithAllAlbum> getAllSongs(Pageable pageable) {
