@@ -178,13 +178,12 @@ public class SongServiceImpl implements SongService {
             String audioFileName = UUID.randomUUID() + ".mp3";
 
             // E. Upload lên S3 (S3Service không biết đây là file fake, nó cứ upload thôi)
-            String songUrl = s3Service.uploadCompressedFile(
+            String songUrl = s3Service.uploadFile(
                     musicFile,
                     "music/song",
                     audioFileName,
                     false,
-                    MAX_AUDIO_SIZE,
-                    MediaType.AUDIO
+                    MAX_AUDIO_SIZE
             );
             song.setSongUrl(songUrl);
 
@@ -324,7 +323,12 @@ public class SongServiceImpl implements SongService {
             } catch (Exception e) { /* Log warning */ }
 
             String audioName = generateFileName(musicFile);
-            String newUrl = s3Service.uploadCompressedFile(musicFile, "music/song", audioName, true, MAX_AUDIO_SIZE, MediaType.AUDIO);
+            String newUrl = s3Service.uploadFile(
+                    musicFile,
+                    "music/song",
+                    audioName,
+                    true, MAX_AUDIO_SIZE
+            );
             song.setSongUrl(newUrl);
 
             int newDuration = audioUtil.getDurationFromMusicFile(musicFile);
