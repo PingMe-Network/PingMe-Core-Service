@@ -1,5 +1,8 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.dto.request.music.SongRequest;
 import me.huynhducphu.ping_me.dto.request.music.misc.SongArtistRequest;
@@ -11,7 +14,6 @@ import me.huynhducphu.ping_me.dto.response.music.misc.GenreDto;
 import me.huynhducphu.ping_me.model.constant.ArtistRole;
 import me.huynhducphu.ping_me.model.music.*;
 import me.huynhducphu.ping_me.repository.jpa.music.*;
-import me.huynhducphu.ping_me.service.ffmpeg.constants.MediaType;
 import me.huynhducphu.ping_me.service.music.SongService;
 import me.huynhducphu.ping_me.service.music.util.AudioUtil;
 import me.huynhducphu.ping_me.service.s3.S3Service;
@@ -35,18 +37,29 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SongServiceImpl implements SongService {
 
-    private final SongRepository songRepository;
-    private final ArtistRepository artistRepository;
-    private final AlbumRepository albumRepository;
-    private final GenreRepository genreRepository;
-    private final SongArtistRoleRepository songArtistRoleRepository;
-    private final AudioUtil audioUtil;
-    private final SongPlayHistoryRepository songPlayHistoryRepository;
-    private final RedisTemplate<String, String> redis;
-    private final S3Service s3Service;
-    private final CurrentUserProvider currentUserProvider;
+    // Repository
+    SongRepository songRepository;
+    ArtistRepository artistRepository;
+    AlbumRepository albumRepository;
+    GenreRepository genreRepository;
+    SongArtistRoleRepository songArtistRoleRepository;
+    SongPlayHistoryRepository songPlayHistoryRepository;
+
+    // Utils
+    AudioUtil audioUtil;
+
+    // Service
+    S3Service s3Service;
+
+    // Provider
+    CurrentUserProvider currentUserProvider;
+
+    // Redis
+    RedisTemplate<String, String> redis;
+
 
     public SongServiceImpl(
             SongRepository songRepository, ArtistRepository artistRepository,
