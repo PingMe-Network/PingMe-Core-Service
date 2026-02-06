@@ -51,6 +51,10 @@ public class OtpServiceImpl implements OtpService {
     @Value("${spring.mail.timeout}")
     long timeout;
 
+    @NonFinal
+    @Value("${spring.mail.default-otp}")
+    String defaultOtp;
+
     @Override
     public GetOtpResponse sendOtp(GetOtpRequest request) {
         String email = request.getEmail();
@@ -71,6 +75,14 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public OtpVerificationResponse verifyOtp(OtpVerificationRequest request) {
+        // default otp for testing purpose
+        if(request.getOtp().equalsIgnoreCase(defaultOtp))
+            return OtpVerificationResponse.builder()
+                    .isValid(true)
+                    .resetPasswordToken(executePostVerificationLogic(request.getMailRecipient(), request.getOtpType())
+                            .orElse(null))
+                    .build();
+
         String email = request.getMailRecipient();
         String storedOtp = redisService.get(OTP_PREFIX + email);
 
