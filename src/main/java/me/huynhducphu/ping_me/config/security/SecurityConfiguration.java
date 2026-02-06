@@ -28,7 +28,7 @@ public class SecurityConfiguration {
             "/auth/logout",
             "/auth/register",
             "/auth/refresh",
-            "/auth-management/api/v1/admin/login",
+            "/auth/admin/login",
 
             // Forget password
             "/auth/forget-password",
