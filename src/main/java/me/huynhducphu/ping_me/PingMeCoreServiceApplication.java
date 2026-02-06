@@ -18,10 +18,10 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 @EnableJpaRepositories(basePackages = "me.huynhducphu.ping_me.repository.jpa")
 @EnableMongoRepositories(basePackages = "me.huynhducphu.ping_me.repository.mongodb")
 @EnableFeignClients
-public class PingMeBackendApplication {
+public class PingMeCoreServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(PingMeBackendApplication.class, args);
+        SpringApplication.run(PingMeCoreServiceApplication.class, args);
     }
 
 }

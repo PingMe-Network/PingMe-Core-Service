@@ -1,8 +1,8 @@
 package me.huynhducphu.ping_me.repository.jpa.chat;
 
 import me.huynhducphu.ping_me.dto.response.friendship.UserFriendshipStatsResponse;
-import me.huynhducphu.ping_me.model.constant.FriendshipStatus;
 import me.huynhducphu.ping_me.model.chat.Friendship;
+import me.huynhducphu.ping_me.model.constant.FriendshipStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

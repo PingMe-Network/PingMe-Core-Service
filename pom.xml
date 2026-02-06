@@ -17,7 +17,7 @@
     <artifactId>PingMe-Backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>PingMe-Backend</name>
-    <description>Backend Project for PingMe — A Simple Chatting Website Platform</description>
+    <description>Core Service for PingMe Network</description>
     <packaging>jar</packaging>
 
     <url/>
@@ -267,6 +267,7 @@
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
@@ -279,6 +280,7 @@
                     </to>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -291,6 +293,7 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -303,6 +306,7 @@
                     </excludes>
                 </configuration>
             </plugin>
+            
         </plugins>
     </build>
 

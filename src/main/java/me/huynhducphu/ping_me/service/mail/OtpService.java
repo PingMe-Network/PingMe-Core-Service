@@ -10,8 +10,10 @@ import me.huynhducphu.ping_me.dto.response.mail.OtpVerificationResponse;
  * @mailto : phatdang19052004@gmail.com
  * @created : 18/01/2026, Sunday
  **/
-public interface MailService {
+public interface OtpService {
     GetOtpResponse sendOtp(GetOtpRequest request);
+
     OtpVerificationResponse verifyOtp(OtpVerificationRequest request);
+
     boolean checkAdminIsVerified();
 }

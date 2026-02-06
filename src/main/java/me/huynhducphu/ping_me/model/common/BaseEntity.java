@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.model.common;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;

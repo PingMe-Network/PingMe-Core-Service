@@ -2,7 +2,10 @@
 package me.huynhducphu.ping_me.model.reels;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 import me.huynhducphu.ping_me.model.constant.ReactionType;

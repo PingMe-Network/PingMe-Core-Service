@@ -8,15 +8,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
+import me.huynhducphu.ping_me.dto.base.PageResponse;
 import me.huynhducphu.ping_me.dto.request.music.ArtistRequest;
 import me.huynhducphu.ping_me.dto.response.music.ArtistResponse;
 import me.huynhducphu.ping_me.service.music.ArtistService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Tag(
         name = "Artists",
@@ -35,8 +37,12 @@ public class ArtistController {
             description = "Lấy toàn bộ nghệ sĩ chưa bị xoá trong hệ thống"
     )
     @GetMapping("/all")
-    public ResponseEntity<ApiResponse<List<ArtistResponse>>> getAllArtists() {
-        return ResponseEntity.ok(new ApiResponse<>(artistService.getAllArtists()));
+    public ResponseEntity<ApiResponse<PageResponse<ArtistResponse>>> getAllArtists(
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        Page<ArtistResponse> page = artistService.getAllArtists(pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
+
     }
 
     // ======================= SEARCH =======================
@@ -45,11 +51,13 @@ public class ArtistController {
             description = "Tìm nghệ sĩ theo tên (không phân biệt hoa thường)"
     )
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<ArtistResponse>>> searchArtists(
+    public ResponseEntity<ApiResponse<PageResponse<ArtistResponse>>> searchArtists(
             @Parameter(description = "Tên nghệ sĩ", example = "Taylor Swift")
-            @RequestParam String name
+            @RequestParam String name,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(new ApiResponse<>(artistService.searchArtists(name)));
+        Page<ArtistResponse> page = artistService.searchArtists(name, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(new PageResponse<>(page)));
     }
 
     // ======================= GET BY ID =======================

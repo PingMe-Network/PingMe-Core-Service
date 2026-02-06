@@ -14,8 +14,8 @@ import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.OtpType;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.service.authentication.JwtService;
-import me.huynhducphu.ping_me.service.mail.MailClient;
-import me.huynhducphu.ping_me.service.mail.MailService;
+import me.huynhducphu.ping_me.service.mail.OtpService;
+import me.huynhducphu.ping_me.service.mail.client.MailClient;
 import me.huynhducphu.ping_me.service.redis.RedisService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.OtpGenerator;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Service
-public class MailServiceImpl implements MailService {
+public class MailServiceImpl implements OtpService {
     RedisService redisService;
     MailClient mailClient;
     CurrentUserProvider currentUserProvider;

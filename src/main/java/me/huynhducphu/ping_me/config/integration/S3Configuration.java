@@ -24,9 +24,6 @@ public class S3Configuration {
     @Value("${aws.region}")
     private String region;
 
-    @Value("${aws.s3.bucket-name}")
-    private String awsBucketName;
-
     @Bean
     public S3Client s3Client() {
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
@@ -43,15 +40,5 @@ public class S3Configuration {
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .build();
-    }
-
-    @Bean
-    public String awsBucketName() {
-        return awsBucketName;
-    }
-
-    @Bean
-    public String awsRegion() {
-        return region;
     }
 }

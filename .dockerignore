@@ -1,0 +1,45 @@
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+
+# ===============================
+# Build output
+# ===============================
+target/
+build/
+out/
+dist/
+
+# ===============================
+# IDE / Editor
+# ===============================
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# ===============================
+# OS
+# ===============================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===============================
+# Environment / Secrets
+# ===============================
+.env
+.env.*
+application-prod.yaml
+application-prod.properties
+application-cloud.yaml
+application-cloud.properties
+
+# ===============================
+# Git
+# ===============================
+.git
+.gitignore

@@ -2,9 +2,9 @@ package me.huynhducphu.ping_me.service.music;
 
 import me.huynhducphu.ping_me.dto.request.music.AlbumRequest;
 import me.huynhducphu.ping_me.dto.response.music.AlbumResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 /**
  * @author Le Tran Gia Huy
@@ -15,11 +15,11 @@ import java.util.List;
 public interface AlbumService {
     Long MAX_COVER_SIZE = 5L * 1024L * 1024L;
 
-    List<AlbumResponse> getAllAlbums();
+    Page<AlbumResponse> getAllAlbums(Pageable pageable);
 
     AlbumResponse getAlbumById(Long id);
 
-    List<AlbumResponse> getAlbumByTitleContainIgnoreCase(String title);
+    Page<AlbumResponse> getAlbumByTitleContainIgnoreCase(String title, Pageable pageable);
 
     AlbumResponse save(AlbumRequest albumRequestDto, MultipartFile albumCoverImg);
 
