@@ -1,9 +1,11 @@
 package me.huynhducphu.ping_me.repository.mongodb.ai;
 
 import me.huynhducphu.ping_me.model.ai.AIChatRoom;
+import me.huynhducphu.ping_me.model.ai.AIMessage;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -30,7 +32,7 @@ public interface AIChatRoomRepository extends MongoRepository<AIChatRoom, UUID> 
     Optional<AIChatRoom> findById(@NotNull UUID uuid);
 
     // Trong AIChatRoomRepository
-    Page<AIChatRoom> findByUserIdOrderByUpdatedAtDesc(
+    Slice<AIChatRoom> findByUserIdOrderByUpdatedAtDesc(
             Long userId,
             Pageable pageable
     );

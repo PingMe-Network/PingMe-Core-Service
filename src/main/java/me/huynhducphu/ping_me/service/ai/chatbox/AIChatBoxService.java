@@ -1,5 +1,8 @@
 package me.huynhducphu.ping_me.service.ai.chatbox;
 
+import me.huynhducphu.ping_me.model.ai.AIChatRoom;
+import me.huynhducphu.ping_me.model.ai.AIMessage;
+import org.springframework.data.domain.Slice;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -12,5 +15,7 @@ import java.util.UUID;
  * @package me.huynhducphu.ping_me.service.ai.chatbox.impl
  */
 public interface AIChatBoxService {
+    Slice<AIMessage> getChatHistory(UUID chatRoomId, int pageNumber, int pageSize);
+    Slice<AIChatRoom> getUserChatRooms(int pageNumber, int pageSize);
     String sendMessageToAI(UUID chatRoomId, String prompt, List<MultipartFile> files);
 }

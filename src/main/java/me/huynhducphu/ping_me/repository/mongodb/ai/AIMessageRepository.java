@@ -4,6 +4,7 @@ import me.huynhducphu.ping_me.model.ai.AIMessage;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -28,14 +29,14 @@ public interface AIMessageRepository extends MongoRepository<AIMessage, UUID> {
     @Override
     Optional<AIMessage> findById(@NotNull UUID uuid);
 
-    // Trong AIMessageRepository
-    Page<AIMessage> findByChatRoomIdOrderByCreatedAtDesc(
+    Page<AIMessage> findByChatRoomIdAndUserIdEqualsIgnoreCaseOrderByCreatedAtDesc(
             UUID chatRoomId,
+            Long userId,
             Pageable pageable
     );
 
-    Page<AIMessage> findByUserIdEqualsOrderByCreatedAtDesc(
-            Long userId,
+    Slice<AIMessage> findByChatRoomIdOrderByCreatedAtDesc(
+            UUID chatRoomId,
             Pageable pageable
     );
 

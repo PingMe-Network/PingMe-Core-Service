@@ -15,6 +15,8 @@ import me.huynhducphu.ping_me.utils.AIChatHelper;
 import org.springframework.ai.content.Media;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +42,31 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
     private final CurrentUserProvider currentUserProvider;
     private final ChatSummarizerService chatSummarizerService;
     private final AIChatHelper aiChatHelper;
+
+    public Slice<AIMessage> getChatHistory(UUID chatRoomId, int pageNumber, int pageSize) {
+        Long currentUserId = currentUserProvider.get().getId();
+        // Bước 1: Kiểm tra quyền truy cập (Bảo mật)
+        // Phải đảm bảo phòng chat này tồn tại VÀ thuộc về user đang đăng nhập
+        AIChatRoom room = aiChatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new EntityNotFoundException("Phòng chat không tồn tại!"));
+        if (!room.getUserId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền xem tin nhắn này!");
+        }
+        if(pageSize % 2 !=0){
+            pageSize +=1; //đảm bảo pageSize luôn là số chẵn để phân bổ đều tin nhắn giữa User và AI
+        }
+        // Bước 2: Lấy tin nhắn (Của cả User VÀ AI)
+        // Trả về Slice (Thay vì List)
+        // Slice chứa: List tin nhắn + biến 'hasNext' (còn trang sau ko)
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        return aiMessageRepository.findByChatRoomIdOrderByCreatedAtDesc(chatRoomId, pageable);
+    }
+
+    public Slice<AIChatRoom> getUserChatRooms(int pageNumber, int pageSize){
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Long userId = currentUserProvider.get().getId();
+        return aiChatRoomRepository.findByUserIdOrderByUpdatedAtDesc(userId, pageable);
+    }
 
     public String sendMessageToAI(UUID chatRoomId, String prompt, List<MultipartFile> files) {
         //Kiểm tra tính hợp lệ của file (phải là ảnh + dung lượng < 5MB)
@@ -111,10 +138,8 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         List<AIMessage> currentRoomMsgs = aiChatHelper.getCurrentRoomHistory(currentRoomId, 0, 20);
         // 2. Lấy 10 tin nhắn phòng khác
         List<AIMessage> otherRoomsMsgs = getOtherMessageHistoryFromAnotherRooms(userId, currentRoomId, 0, 10);
-
         Collections.reverse(currentRoomMsgs);
         Collections.reverse(otherRoomsMsgs);
-
         String actualPrompt = buildContextualPrompt(
                 prompt,
                 currentRoomMsgs,
@@ -140,7 +165,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         return otherRoomsMsgs;
     }
 
-    public String buildContextualPrompt(
+    private String buildContextualPrompt(
             String userQuestion,
             List<AIMessage> currentRoomHistory,
             List<AIMessage> otherRoomsHistory,
