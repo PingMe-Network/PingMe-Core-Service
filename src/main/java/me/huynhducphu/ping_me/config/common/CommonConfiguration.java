@@ -20,13 +20,14 @@ import java.util.Optional;
 @Configuration
 public class CommonConfiguration {
 
-    @Bean
+    @Bean(name = "auditorProvider")
     public AuditorAware<@NonNull String> auditorProvider() {
-
-        return () -> Optional.ofNullable(
-                SecurityContextHolder.getContext().getAuthentication()
-        ).map(Authentication::getName);
-
+        return () -> Optional.ofNullable(SecurityContextHolder
+                        .getContext()
+                        .getAuthentication())
+                .filter(Authentication::isAuthenticated)
+                .map(Authentication::getName)
+                .or(() -> Optional.of("SYSTEM"));
     }
 
     @Bean
