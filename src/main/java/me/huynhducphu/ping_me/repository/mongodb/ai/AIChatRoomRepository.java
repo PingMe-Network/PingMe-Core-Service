@@ -1,14 +1,12 @@
 package me.huynhducphu.ping_me.repository.mongodb.ai;
 
 import me.huynhducphu.ping_me.model.ai.AIChatRoom;
-import me.huynhducphu.ping_me.model.chat.Message;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
