@@ -35,8 +35,7 @@ public class OtpServiceImpl implements OtpService {
     RedisService redisService;
     JwtService jwtService;
 
-    // Client
-    MailClient mailClient;
+    MailAsyncService mailAsyncService;
 
     // Repository
     UserRepository userRepository;
@@ -60,16 +59,20 @@ public class OtpServiceImpl implements OtpService {
         String email = request.getEmail();
         String otp = OtpGenerator.generateOtp(6);
 
-        // Lưu mã OTP vào Redis
         redisService.set(OTP_PREFIX + email, otp, timeout, TimeUnit.MINUTES);
 
-        // Gọi mail client để gửi
-        boolean isSent = trySendEmail(otp, email, request.getOtpType());
+        mailAsyncService.sendOtpAsync(
+                SendOtpRequest.builder()
+                        .toMail(email)
+                        .otp(otp)
+                        .otpType(request.getOtpType())
+                        .build()
+        );
 
         return GetOtpResponse.builder()
                 .otp(otp)
                 .mailRecipient(email)
-                .isSent(isSent)
+                .isSent(true)
                 .build();
     }
 
@@ -131,20 +134,4 @@ public class OtpServiceImpl implements OtpService {
 
         };
     }
-
-    private boolean trySendEmail(String otp, String email, OtpType type) {
-        try {
-            ApiResponse<Boolean> res = mailClient.sendOtpToAdmin(
-                    SendOtpRequest.builder()
-                            .toMail(email)
-                            .otp(otp)
-                            .otpType(type)
-                            .build()
-            );
-            return res != null && Boolean.TRUE.equals(res.getData());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to send OTP email: " + e.getMessage());
-        }
-    }
-
 }
