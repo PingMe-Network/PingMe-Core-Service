@@ -122,8 +122,12 @@ VALUES
 
 (20, 1, '2025-12-01 08:20:00.000000', 'admin', '2025-12-01 08:20:00.000000', 'admin', '654 Đường E, Quận 5',
  'LOCAL', NULL, '1997-07-07', 'Test20_Deactive@gmail.com', 'MALE', 'Hoàng Văn Chặn',
- '$2a$10$6RAjVIU8XxvwJ2ewoDPoAeCUlKJqH7gRHaashHrwkwVv0WKm5/z5e', 'OFFLINE', 2, 'DEACTIVATED');
+ '$2a$10$6RAjVIU8XxvwJ2ewoDPoAeCUlKJqH7gRHaashHrwkwVv0WKm5/z5e', 'OFFLINE', 2, 'DEACTIVATED'),
 
+(21, 1, '2025-11-18 22:48:59.615037', 'anonymousUser', '2025-11-18 23:05:04.360119', 'phatdang19032004@gmail.com',
+ '56/9 Lạc Long Quân, P.5, Q.11, TP.HCM', 'LOCAL',
+ 'https://pingme-s3.s3.ap-southeast-1.amazonaws.com/avatar/Test1@gmail.com', '2025-07-17', 'phatdang19032004@gmail.com',
+ 'MALE', 'Meo Ngot', '$2a$10$6RAjVIU8XxvwJ2ewoDPoAeCUlKJqH7gRHaashHrwkwVv0WKm5/z5e', 'OFFLINE', 2, 'NON_ACTIVATED');
 -- ===========================================================================================================
 -- Tạo mối quan hệ giữa các User (chủ yếu là tài khoản HuynhDucPhu2502@gmail.com với 9 user TestX@gmail.com)
 -- ===========================================================================================================
