@@ -6,10 +6,12 @@ import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.authentication.ChangePasswordRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.ChangeProfileRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.CreateNewPasswordRequest;
+import me.huynhducphu.ping_me.dto.response.authentication.ActiveAccountResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CreateNewPasswordResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserProfileResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
 import me.huynhducphu.ping_me.model.User;
+import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.service.authentication.JwtService;
 import me.huynhducphu.ping_me.service.s3.S3Service;
@@ -145,6 +147,24 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
                     .build();
         }
 
+    }
+
+    @Override
+    public ActiveAccountResponse activateAccount() {
+        User currentUser = currentUserProvider.get();
+        if(currentUser.getAccountStatus() != AccountStatus.NON_ACTIVATED)
+            throw new IllegalArgumentException("Account is already activated!");
+        try {
+            currentUser.setAccountStatus(AccountStatus.ACTIVE);
+            userRepository.save(currentUser);
+            return ActiveAccountResponse.builder()
+                    .isActivated(true)
+                    .build();
+        }catch (Exception e){
+            return ActiveAccountResponse.builder()
+                    .isActivated(false)
+                    .build();
+        }
     }
 
 }
