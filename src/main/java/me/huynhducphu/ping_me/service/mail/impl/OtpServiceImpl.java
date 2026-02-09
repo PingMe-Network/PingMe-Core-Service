@@ -5,18 +5,17 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.request.mail.GetOtpRequest;
 import me.huynhducphu.ping_me.dto.request.mail.OtpVerificationRequest;
 import me.huynhducphu.ping_me.dto.request.mail.SendOtpRequest;
 import me.huynhducphu.ping_me.dto.response.mail.GetOtpResponse;
 import me.huynhducphu.ping_me.dto.response.mail.OtpVerificationResponse;
 import me.huynhducphu.ping_me.model.User;
+import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.model.constant.OtpType;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.service.authentication.JwtService;
 import me.huynhducphu.ping_me.service.mail.OtpService;
-import me.huynhducphu.ping_me.service.mail.client.MailClient;
 import me.huynhducphu.ping_me.service.redis.RedisService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.OtpGenerator;
@@ -58,6 +57,13 @@ public class OtpServiceImpl implements OtpService {
     public GetOtpResponse sendOtp(GetOtpRequest request) {
         String email = request.getEmail();
         String otp = OtpGenerator.generateOtp(6);
+
+        User user = userRepository.findByEmail(email);
+        if(user == null) throw new EntityNotFoundException("User not found with email: " + email);
+
+        if(request.getOtpType() != OtpType.ACCOUNT_ACTIVATION &&
+                user.getAccountStatus() == AccountStatus.NON_ACTIVATED)
+            throw new IllegalArgumentException("Please active your email to do this action: " + email);
 
         redisService.set(OTP_PREFIX + email, otp, timeout, TimeUnit.MINUTES);
 
@@ -132,6 +138,7 @@ public class OtpServiceImpl implements OtpService {
                 yield Optional.ofNullable(jwtService.buildJwt(user, 600L));
             }
 
+            default -> Optional.empty();
         };
     }
 }
