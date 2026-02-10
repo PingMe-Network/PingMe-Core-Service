@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.request.authentication.ChangePasswordRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.ChangeProfileRequest;
+import me.huynhducphu.ping_me.dto.response.authentication.ActiveAccountResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserProfileResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
 import me.huynhducphu.ping_me.service.user.CurrentUserProfileService;
@@ -93,4 +94,8 @@ public class CurrentUserProfileController {
                 .body(new ApiResponse<>(currentUserProfileService.updateCurrentUserAvatar(avatarFile)));
     }
 
+    @PostMapping("/activate")
+    ApiResponse<ActiveAccountResponse> activateAccount() {
+        return new ApiResponse<>(currentUserProfileService.activateAccount());
+    }
 }

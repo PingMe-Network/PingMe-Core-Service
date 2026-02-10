@@ -1,0 +1,267 @@
+package me.huynhducphu.ping_me.service.ai.chatbox.impl;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import me.huynhducphu.ping_me.model.ai.AIChatRoom;
+import me.huynhducphu.ping_me.model.ai.AIMessage;
+import me.huynhducphu.ping_me.model.constant.AIMessageType;
+import me.huynhducphu.ping_me.repository.mongodb.ai.AIChatRoomRepository;
+import me.huynhducphu.ping_me.repository.mongodb.ai.AIMessageRepository;
+import me.huynhducphu.ping_me.service.ai.chatbox.AIChatBoxService;
+import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
+import me.huynhducphu.ping_me.utils.AIChatHelper;
+import org.springframework.ai.content.Media;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+
+/**
+ * @author Le Tran Gia Huy
+ * @created 27/01/2026 - 5:54 PM
+ * @project PingMe-Backend
+ * @package me.huynhducphu.ping_me.service.ai.chatbox
+ */
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AIChatBoxServiceImpl implements AIChatBoxService {
+
+    private static final long MAX_IMG_SIZE = 5L * 1024L * 1024L;
+    private final S3Service s3Service;
+    private final AIMessageRepository aiMessageRepository;
+    private final AIChatRoomRepository aiChatRoomRepository;
+    private final CurrentUserProvider currentUserProvider;
+    private final ChatSummarizerService chatSummarizerService;
+    private final AIChatHelper aiChatHelper;
+
+    public Slice<AIMessage> getChatHistory(UUID chatRoomId, int pageNumber, int pageSize) {
+        Long currentUserId = currentUserProvider.get().getId();
+        // Bước 1: Kiểm tra quyền truy cập (Bảo mật)
+        // Phải đảm bảo phòng chat này tồn tại VÀ thuộc về user đang đăng nhập
+        AIChatRoom room = aiChatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new EntityNotFoundException("Phòng chat không tồn tại!"));
+        if (!room.getUserId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền xem tin nhắn này!");
+        }
+        if(pageSize % 2 !=0){
+            pageSize +=1; //đảm bảo pageSize luôn là số chẵn để phân bổ đều tin nhắn giữa User và AI
+        }
+        // Bước 2: Lấy tin nhắn (Của cả User VÀ AI)
+        // Trả về Slice (Thay vì List)
+        // Slice chứa: List tin nhắn + biến 'hasNext' (còn trang sau ko)
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        return aiMessageRepository.findByChatRoomIdOrderByCreatedAtDesc(chatRoomId, pageable);
+    }
+
+    public Slice<AIChatRoom> getUserChatRooms(int pageNumber, int pageSize){
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Long userId = currentUserProvider.get().getId();
+        return aiChatRoomRepository.findByUserIdOrderByUpdatedAtDesc(userId, pageable);
+    }
+
+    public String sendMessageToAI(UUID chatRoomId, String prompt, List<MultipartFile> files) {
+        //Kiểm tra tính hợp lệ của file (phải là ảnh + dung lượng < 5MB)
+        validateFiles(files);
+        validatePrompt(prompt);
+        Long userId = currentUserProvider.get().getId();
+        if(chatRoomId == null) {
+            AIChatRoom newChatRoom = new AIChatRoom();
+            newChatRoom.setId(UUID.randomUUID());
+            newChatRoom.setUserId(userId);
+            // Lưu chat room mới vào database
+            chatRoomId = newChatRoom.getId();
+            aiChatRoomRepository.save(newChatRoom);
+        }else if (!aiMessageRepository.existsById(chatRoomId)) {
+            throw new EntityNotFoundException("Chat room không tồn tại!");
+        }
+        // Tải file lên S3 và lưu URL vào database
+        List<AIMessage.Attachment> dbAttachments = processingMediaFile(files);
+        // Chuyển đổi MultipartFile thành Media (Media thuộc Spring AI)
+        List<Media> mediaList = (files != null) ? files.stream().map(file -> {
+            return new Media(
+                    MimeTypeUtils.parseMimeType(Objects.requireNonNull(file.getContentType())),
+                    file.getResource()
+            );
+        }).toList() : List.of();
+        //tạo 1 AIMessage lưu prompt và media vào database
+        AIMessage humanMessage = new AIMessage();
+        humanMessage.setId(UUID.randomUUID());
+        humanMessage.setChatRoomId(chatRoomId);
+        humanMessage.setUserId(userId);
+        humanMessage.setType(AIMessageType.SENT);
+        humanMessage.setContent(prompt);
+        humanMessage.setAttachments(dbAttachments);
+        aiMessageRepository.save(humanMessage);
+        /**
+         *Tạo 1 UserMessage bao gồm prompt và media. UserMessage thuộc Spring (org.springframework.ai.chat.messages)
+         *Từ đó spring gửi cả UserMessage đó đến OpenAI thông qua ChatClient
+         */
+        //Gọi ChatClient để gửi prompt và nhận phản hồi từ AI
+        String response = getResponseFromAI(userId, chatRoomId, prompt, mediaList);
+        AIMessage aiMessage = new AIMessage();
+        aiMessage.setId(UUID.randomUUID());
+        aiMessage.setChatRoomId(chatRoomId);
+        aiMessage.setType(AIMessageType.RECEIVED);
+        aiMessage.setContent(response);
+        aiMessageRepository.save(aiMessage);
+        // Cập nhật thông tin phòng chat
+        AIChatRoom currentChatRoom = aiChatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new EntityNotFoundException("Chat room không tồn tại!"));
+        currentChatRoom.setMsgCountSinceLastSummary(currentChatRoom.getMsgCountSinceLastSummary()+1);
+        currentChatRoom.setTotalMsgCount(currentChatRoom.getTotalMsgCount()+1);
+
+        if(currentChatRoom.getTitle().trim().isEmpty()){
+            String titlePrompt = getTitleForAICHatRoom(prompt, response);
+            currentChatRoom.setTitle(titlePrompt);
+        }else{
+            // Cứ sau mỗi 10 tin nhắn, ta sẽ yêu cầu GPT-5 Nano tóm tắt cuộc trò chuyện để làm ký ức dài hạn
+            if(currentChatRoom.getMsgCountSinceLastSummary() >= 20){
+                // Gọi hàm tóm tắt hội thoại (chạy ngầm, không block luồng chính)
+                chatSummarizerService.checkAndSummarize(chatRoomId);
+            }
+
+        }
+        return response;
+    }
+
+    private String getResponseFromAI(Long userId, UUID currentRoomId, String prompt, List<Media> mediaList) {
+        // 1. Lấy 20 tin nhắn
+        List<AIMessage> currentRoomMsgs = aiChatHelper.getCurrentRoomHistory(currentRoomId, 0, 20);
+        // 2. Lấy 10 tin nhắn phòng khác
+        List<AIMessage> otherRoomsMsgs = getOtherMessageHistoryFromAnotherRooms(userId, currentRoomId, 0, 10);
+        Collections.reverse(currentRoomMsgs);
+        Collections.reverse(otherRoomsMsgs);
+        String actualPrompt = buildContextualPrompt(
+                prompt,
+                currentRoomMsgs,
+                otherRoomsMsgs,
+                aiChatRoomRepository.findById(currentRoomId).get().getLatestSummary()
+        );
+        return aiChatHelper.useAi(actualPrompt, mediaList,"gpt-5-mini", 500);
+    }
+
+    private List<AIMessage> getOtherMessageHistoryFromAnotherRooms(
+            Long userId,
+            UUID currentRoomId,
+            int pageNumber,
+            int pageSize)
+    {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        List<AIMessage> otherRoomsMsgs = new ArrayList<>(
+                aiMessageRepository
+                        .findByUserIdAndChatRoomIdNotOrderByCreatedAtDesc(userId, currentRoomId, pageable)
+                        .getContent()
+        );
+        Collections.reverse(otherRoomsMsgs);
+        return otherRoomsMsgs;
+    }
+
+    private String buildContextualPrompt(
+            String userQuestion,
+            List<AIMessage> currentRoomHistory,
+            List<AIMessage> otherRoomsHistory,
+            String summary
+    ) {
+        StringBuilder prompt = new StringBuilder();
+        // 1. System Instruction (Định hình vai trò)
+        prompt.append("System: Bạn là trợ lý AI hữu ích trong ứng dụng PingMe.\n");
+        prompt.append("Nhiệm vụ: Trả lời câu hỏi người dùng dựa trên các ngữ cảnh được cung cấp dưới đây.\n\n");
+        // 2. Ký ức dài hạn (Summary)
+        prompt.append("<long_term_memory>\n");
+        prompt.append(summary != null && !summary.isEmpty() ? summary : "Chưa có tóm tắt nào.");
+        prompt.append("\n</long_term_memory>\n\n");
+        // 3. Ngữ cảnh chéo từ phòng khác (Cross-context)
+        prompt.append("<related_context_from_other_rooms>\n");
+        prompt.append(formatHistory(otherRoomsHistory));
+        prompt.append("</related_context_from_other_rooms>\n\n");
+        // 4. Lịch sử hội thoại hiện tại (Short-term memory)
+        prompt.append("<current_conversation_history>\n");
+        prompt.append(formatHistory(currentRoomHistory));
+        prompt.append("</current_conversation_history>\n\n");
+        // 5. Câu hỏi hiện tại (Trigger)
+        prompt.append("User Question: ").append(userQuestion).append("\n");
+        prompt.append("AI Answer:");
+        return prompt.toString();
+    }
+
+    // Helper: Chuyển List<AIMessage> thành String dễ đọc
+    private String formatHistory(List<AIMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return "(Không có dữ liệu)\n";
+        }
+        StringBuilder historyBuilder = new StringBuilder();
+        for (AIMessage msg : messages) {
+            // Xác định vai trò: User hay AI
+            String role = (msg.getType() == AIMessageType.SENT) ? "User" : "AI";
+            // Format: [User]: Nội dung tin nhắn
+            historyBuilder.append(String.format("[%s]: %s\n", role, msg.getContent()));
+        }
+        return historyBuilder.toString();
+    }
+
+    private String getTitleForAICHatRoom(String sentPrompt, String receivedResponse){
+        String titlePrompt = "Đặt tiêu đề cho chat: User: " + sentPrompt + " | AI: " + receivedResponse
+                + ". Quy tắc: < 10 từ, không dùng ngoặc kép, chỉ trả về text tiêu đề. Ngôn ngữ trả về tùy thuộc vào ngôn ngữ của prompt. LƯU Ý, CHỈ TRẢ VỀ TIÊU ĐỀ, KHÔNG THÊM BẤT KỲ KÝ TỰ, NỘI DUNG NÀO KHÁC.";
+        return aiChatHelper.useAi(titlePrompt, List.of(),"gpt-5-nano", 50);
+    }
+
+    private void validateFiles(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) return;
+
+        for (MultipartFile file : files) {
+            String contentType = file.getContentType();
+            long sizeInBytes = file.getSize();
+
+            // 1. Chỉ cho phép các định dạng ảnh phổ biến
+            if (contentType == null || !contentType.startsWith("image/")) {
+                throw new IllegalArgumentException("Chỉ được phép tải lên hình ảnh! File "
+                        + file.getOriginalFilename() + " không hợp lệ.");
+            }
+
+            // 2. Giới hạn dung lượng ảnh tối đa 5MB
+            if (sizeInBytes > 5 * 1024 * 1024) {
+                throw new IllegalArgumentException("Ảnh " + file.getOriginalFilename()
+                        + " vượt quá giới hạn 5MB.");
+            }
+        }
+    }
+
+    private void validatePrompt(String prompt){
+        if (prompt.length() > 4000) {
+            throw new IllegalArgumentException("Câu hỏi quá dài! Vui lòng tóm tắt lại dưới 4000 ký tự.");
+        }
+    }
+
+    private String generateFileName(MultipartFile file) {
+        String original = file.getOriginalFilename();
+        String ext = "";
+        if (original != null && original.contains(".")) {
+            ext = original.substring(original.lastIndexOf("."));
+        }
+        return UUID.randomUUID() + ext;
+    }
+
+    private List<AIMessage.Attachment> processingMediaFile(List<MultipartFile> files){
+        List<AIMessage.Attachment> dbAttachments = new ArrayList<>();
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                String fileName = generateFileName(file);
+                String fileUrl = s3Service.uploadFile(file, "ai/file", fileName, true, MAX_IMG_SIZE);
+
+                // Lưu vào list attachment để lưu database
+                dbAttachments.add(new AIMessage.Attachment(fileUrl, file.getContentType()));
+            }
+        }
+        return dbAttachments;
+    }
+
+}

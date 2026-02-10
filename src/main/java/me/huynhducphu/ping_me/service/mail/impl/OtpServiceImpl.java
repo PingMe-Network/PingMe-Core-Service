@@ -5,18 +5,17 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.request.mail.GetOtpRequest;
 import me.huynhducphu.ping_me.dto.request.mail.OtpVerificationRequest;
 import me.huynhducphu.ping_me.dto.request.mail.SendOtpRequest;
 import me.huynhducphu.ping_me.dto.response.mail.GetOtpResponse;
 import me.huynhducphu.ping_me.dto.response.mail.OtpVerificationResponse;
 import me.huynhducphu.ping_me.model.User;
+import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.model.constant.OtpType;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.service.authentication.JwtService;
 import me.huynhducphu.ping_me.service.mail.OtpService;
-import me.huynhducphu.ping_me.service.mail.client.MailClient;
 import me.huynhducphu.ping_me.service.redis.RedisService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.OtpGenerator;
@@ -35,8 +34,7 @@ public class OtpServiceImpl implements OtpService {
     RedisService redisService;
     JwtService jwtService;
 
-    // Client
-    MailClient mailClient;
+    MailAsyncService mailAsyncService;
 
     // Repository
     UserRepository userRepository;
@@ -51,26 +49,49 @@ public class OtpServiceImpl implements OtpService {
     @Value("${spring.mail.timeout}")
     long timeout;
 
+    @NonFinal
+    @Value("${spring.mail.default-otp}")
+    String defaultOtp;
+
     @Override
     public GetOtpResponse sendOtp(GetOtpRequest request) {
         String email = request.getEmail();
         String otp = OtpGenerator.generateOtp(6);
 
-        // Lưu mã OTP vào Redis
+        User user = userRepository.findByEmail(email);
+        if(user == null) throw new EntityNotFoundException("User not found with email: " + email);
+
+        if(request.getOtpType() != OtpType.ACCOUNT_ACTIVATION &&
+                user.getAccountStatus() == AccountStatus.NON_ACTIVATED)
+            throw new IllegalArgumentException("Please active your email to do this action: " + email);
+
         redisService.set(OTP_PREFIX + email, otp, timeout, TimeUnit.MINUTES);
 
-        // Gọi mail client để gửi
-        boolean isSent = trySendEmail(otp, email, request.getOtpType());
+        mailAsyncService.sendOtpAsync(
+                SendOtpRequest.builder()
+                        .toMail(email)
+                        .otp(otp)
+                        .otpType(request.getOtpType())
+                        .build()
+        );
 
         return GetOtpResponse.builder()
                 .otp(otp)
                 .mailRecipient(email)
-                .isSent(isSent)
+                .isSent(true)
                 .build();
     }
 
     @Override
     public OtpVerificationResponse verifyOtp(OtpVerificationRequest request) {
+        // default otp for testing purpose
+        if(request.getOtp().equalsIgnoreCase(defaultOtp))
+            return OtpVerificationResponse.builder()
+                    .isValid(true)
+                    .resetPasswordToken(executePostVerificationLogic(request.getMailRecipient(), request.getOtpType())
+                            .orElse(null))
+                    .build();
+
         String email = request.getMailRecipient();
         String storedOtp = redisService.get(OTP_PREFIX + email);
 
@@ -117,22 +138,7 @@ public class OtpServiceImpl implements OtpService {
                 yield Optional.ofNullable(jwtService.buildJwt(user, 600L));
             }
 
+            default -> Optional.empty();
         };
     }
-
-    private boolean trySendEmail(String otp, String email, OtpType type) {
-        try {
-            ApiResponse<Boolean> res = mailClient.sendOtpToAdmin(
-                    SendOtpRequest.builder()
-                            .toMail(email)
-                            .otp(otp)
-                            .otpType(type)
-                            .build()
-            );
-            return res != null && Boolean.TRUE.equals(res.getData());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to send OTP email: " + e.getMessage());
-        }
-    }
-
 }

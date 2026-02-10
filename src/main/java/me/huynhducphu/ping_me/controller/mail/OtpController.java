@@ -33,7 +33,7 @@ public class OtpController {
     }
 
     @PostMapping("/send")
-    ApiResponse<GetOtpResponse> sendOtpToAdmin(@RequestBody GetOtpRequest request) {
+    ApiResponse<GetOtpResponse> sendOtp(@RequestBody GetOtpRequest request) {
         GetOtpResponse res = otpService.sendOtp(request);
         HttpStatus httpStatus = res.getIsSent() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return ApiResponse.<GetOtpResponse>builder()

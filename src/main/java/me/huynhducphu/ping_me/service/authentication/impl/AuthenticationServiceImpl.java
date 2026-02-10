@@ -5,6 +5,10 @@ import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.request.authentication.LoginRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.RegisterRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.SubmitSessionMetaRequest;
+import me.huynhducphu.ping_me.dto.request.authentication.*;
+import me.huynhducphu.ping_me.dto.response.authentication.AdminLoginResponse;
+import me.huynhducphu.ping_me.model.constant.AccountStatus;
+import me.huynhducphu.ping_me.service.authentication.model.AuthResultWrapper;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
@@ -129,6 +133,29 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         refreshTokenRedisService.deleteRefreshToken(refreshToken, refreshTokenUser.getId().toString());
 
         return buildAuthResultWrapper(refreshTokenUser, submitSessionMetaRequest);
+    }
+
+    @Override
+    public AdminLoginResponse adminLogin(LoginRequest loginRequest) {
+        String email = loginRequest.getEmail();
+        User user = userRepository.findByEmail(email);
+
+        if(user == null) throw new NullPointerException("Không tìm thấy người dùng với email: " + email);
+
+        if(!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword()))
+            throw new IllegalArgumentException("Mật khẩu không đúng");
+
+        if (!user.getRole().getName().equals("ADMIN"))
+            throw new AccessDeniedException("Người dùng không có quyền truy cập");
+
+        String accessToken = jwtService.buildJwt(user, 600L);
+
+        return AdminLoginResponse.builder()
+                .accessToken(accessToken)
+                .email(user.getEmail())
+                .isAdminAccount(true)
+                .userSession(userMapper.mapToCurrentUserSessionResponse(user))
+                .build();
     }
 
     // =====================================

@@ -10,5 +10,6 @@ import lombok.Getter;
 @Getter
 public enum OtpType {
     ADMIN_VERIFICATION,
-    USER_FORGET_PASSWORD
+    USER_FORGET_PASSWORD,
+    ACCOUNT_ACTIVATION
 }

@@ -14,9 +14,9 @@
     </parent>
 
     <groupId>me.huynhducphu</groupId>
-    <artifactId>PingMe-Backend</artifactId>
+    <artifactId>pingme-core-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>PingMe-Backend</name>
+    <name>PingMe-Core-Service</name>
     <description>Core Service for PingMe Network</description>
     <packaging>jar</packaging>
 
@@ -306,7 +306,7 @@
                     </excludes>
                 </configuration>
             </plugin>
-            
+
         </plugins>
     </build>
 
