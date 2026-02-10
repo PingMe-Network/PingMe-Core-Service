@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
+import me.huynhducphu.ping_me.dto.response.ai.AIChatResponseDTO;
 import me.huynhducphu.ping_me.model.ai.AIChatRoom;
 import me.huynhducphu.ping_me.model.ai.AIMessage;
 import me.huynhducphu.ping_me.service.ai.chatbox.AIChatBoxService;
@@ -58,12 +59,12 @@ public class AIChatBoxController {
             description = "Nếu chatRoomId null -> Tạo phòng mới. Nếu có chatRoomId -> Chat tiếp phòng cũ. Hỗ trợ upload nhiều ảnh."
     )
     @PostMapping(value = "/chat", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<String>> chatWithAI(
+    public ResponseEntity<ApiResponse<AIChatResponseDTO>> chatWithAI(
             @RequestParam(required = false) UUID chatRoomId,
             @RequestParam(required = true) String prompt,
             @RequestPart(required = false) List<MultipartFile> files
     ) {
-        String response = service.sendMessageToAI(chatRoomId, prompt, files);
+        AIChatResponseDTO response = service.sendMessageToAI(chatRoomId, prompt, files);
         return ResponseEntity.ok(new ApiResponse<>(response));
     }
 }

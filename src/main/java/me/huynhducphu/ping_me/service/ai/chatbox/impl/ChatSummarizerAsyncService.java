@@ -24,7 +24,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ChatSummarizerService {
+public class ChatSummarizerAsyncService {
 
     private final AIChatRoomRepository aiChatRoomRepository;
     private final AIChatHelper aiChatHelper;
@@ -36,7 +36,7 @@ public class ChatSummarizerService {
         AIChatRoom room = aiChatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new EntityNotFoundException("Room not found"));
         // 2. Kiểm tra điều kiện: Nếu chưa đủ 10 tin nhắn mới thì bỏ qua
-        if (room.getMsgCountSinceLastSummary() < 20) {
+        if (room.getInteractCountSinceLastSummary() < 20) {
             return;
         }
         log.info("Triggering summary for Room: {}", chatRoomId);
@@ -54,7 +54,7 @@ public class ChatSummarizerService {
             String newSummary = aiChatHelper.useAi(prompt, List.of(),"gpt-5-nano", 100);
             // 6. Cập nhật và Lưu vào DB
             room.setLatestSummary(newSummary);
-            room.setMsgCountSinceLastSummary(0); // Reset bộ đếm về 0
+            room.setInteractCountSinceLastSummary(0); // Reset bộ đếm về 0
             aiChatRoomRepository.save(room);
             log.info("Summary updated successfully for Room: {}", chatRoomId);
         } catch (Exception e) {

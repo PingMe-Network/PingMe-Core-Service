@@ -48,7 +48,7 @@ public class AIChatRoom {
     private String latestSummary; // Ký ức dài hạn tích lũy từ GPT-5 Nano
 
     @Field("msg_count_since_last_summary")
-    private int msgCountSinceLastSummary = 0; // Để biết khi nào đạt ngưỡng 10-20 tin để tóm tắt tiếp
+    private int interactCountSinceLastSummary = 0; // Để biết khi nào đạt ngưỡng 10-20 tin để tóm tắt tiếp
 
     @CreatedDate
     @Field("created_at")

@@ -1,14 +1,11 @@
 package me.huynhducphu.ping_me.repository.mongodb.ai;
 
 import me.huynhducphu.ping_me.model.ai.AIChatRoom;
-import me.huynhducphu.ping_me.model.ai.AIMessage;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +19,6 @@ import java.util.UUID;
 
 @Repository
 public interface AIChatRoomRepository extends MongoRepository<AIChatRoom, UUID> {
-
     @NotNull
     @Override
     List<AIChatRoom> findAll();
@@ -37,9 +33,12 @@ public interface AIChatRoomRepository extends MongoRepository<AIChatRoom, UUID> 
             Pageable pageable
     );
 
+    List<AIChatRoom> findTop5ByUserIdAndIdNotOrderByUpdatedAtDesc(
+            Long userId,
+            UUID id
+    );
+
     @NotNull
     @Override
     <S extends AIChatRoom> S save(@NotNull S entity);
-
-
 }

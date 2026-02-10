@@ -3,6 +3,7 @@ package me.huynhducphu.ping_me.service.ai.chatbox.impl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.huynhducphu.ping_me.dto.response.ai.AIChatResponseDTO;
 import me.huynhducphu.ping_me.model.ai.AIChatRoom;
 import me.huynhducphu.ping_me.model.ai.AIMessage;
 import me.huynhducphu.ping_me.model.constant.AIMessageType;
@@ -19,9 +20,11 @@ import org.springframework.data.domain.Slice;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Le Tran Gia Huy
@@ -40,7 +43,8 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
     private final AIMessageRepository aiMessageRepository;
     private final AIChatRoomRepository aiChatRoomRepository;
     private final CurrentUserProvider currentUserProvider;
-    private final ChatSummarizerService chatSummarizerService;
+    private final ChatSummarizerAsyncService chatSummarizerService;
+    private final ChatTitleAsyncService chatTitleAsyncService;
     private final AIChatHelper aiChatHelper;
 
     public Slice<AIMessage> getChatHistory(UUID chatRoomId, int pageNumber, int pageSize) {
@@ -68,12 +72,14 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         return aiChatRoomRepository.findByUserIdOrderByUpdatedAtDesc(userId, pageable);
     }
 
-    public String sendMessageToAI(UUID chatRoomId, String prompt, List<MultipartFile> files) {
+    public AIChatResponseDTO sendMessageToAI(UUID chatRoomId, String prompt, List<MultipartFile> files) {
         //Kiểm tra tính hợp lệ của file (phải là ảnh + dung lượng < 5MB)
         validateFiles(files);
         validatePrompt(prompt);
         Long userId = currentUserProvider.get().getId();
+        boolean isNewRoom = false;
         if(chatRoomId == null) {
+            isNewRoom = true;
             AIChatRoom newChatRoom = new AIChatRoom();
             newChatRoom.setId(UUID.randomUUID());
             newChatRoom.setUserId(userId);
@@ -116,21 +122,23 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         // Cập nhật thông tin phòng chat
         AIChatRoom currentChatRoom = aiChatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat room không tồn tại!"));
-        currentChatRoom.setMsgCountSinceLastSummary(currentChatRoom.getMsgCountSinceLastSummary()+1);
-        currentChatRoom.setTotalMsgCount(currentChatRoom.getTotalMsgCount()+1);
-
+        currentChatRoom.setInteractCountSinceLastSummary(currentChatRoom.getInteractCountSinceLastSummary()+1);
+        currentChatRoom.setTotalMsgCount(currentChatRoom.getTotalMsgCount()+2);
+        aiChatRoomRepository.save(currentChatRoom);
         if(currentChatRoom.getTitle().trim().isEmpty()){
-            String titlePrompt = getTitleForAICHatRoom(prompt, response);
-            currentChatRoom.setTitle(titlePrompt);
+            chatTitleAsyncService.generateAndBroadcastTitle(chatRoomId, prompt, response);
         }else{
             // Cứ sau mỗi 10 tin nhắn, ta sẽ yêu cầu GPT-5 Nano tóm tắt cuộc trò chuyện để làm ký ức dài hạn
-            if(currentChatRoom.getMsgCountSinceLastSummary() >= 20){
+            if(currentChatRoom.getInteractCountSinceLastSummary() >= 10){
                 // Gọi hàm tóm tắt hội thoại (chạy ngầm, không block luồng chính)
                 chatSummarizerService.checkAndSummarize(chatRoomId);
             }
-
         }
-        return response;
+        return AIChatResponseDTO.builder()
+                .content(response)
+                .chatRoomId(chatRoomId)
+                .isNewRoom(isNewRoom)
+                .build();
     }
 
     private String getResponseFromAI(Long userId, UUID currentRoomId, String prompt, List<Media> mediaList) {
@@ -140,11 +148,17 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         List<AIMessage> otherRoomsMsgs = getOtherMessageHistoryFromAnotherRooms(userId, currentRoomId, 0, 10);
         Collections.reverse(currentRoomMsgs);
         Collections.reverse(otherRoomsMsgs);
+        String currentSummary = aiChatRoomRepository.findById(currentRoomId)
+                .map(AIChatRoom::getLatestSummary)
+                .orElse("");
+        String globalSummaries = getGlobalSummaries(userId, currentRoomId);
+        String combinedSummary = "Current Room Summary: " + currentSummary + "\n\n" +
+                "Other Rooms Summaries:\n" + globalSummaries;
         String actualPrompt = buildContextualPrompt(
                 prompt,
                 currentRoomMsgs,
                 otherRoomsMsgs,
-                aiChatRoomRepository.findById(currentRoomId).get().getLatestSummary()
+                combinedSummary
         );
         return aiChatHelper.useAi(actualPrompt, mediaList,"gpt-5-mini", 500);
     }
@@ -208,12 +222,6 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         return historyBuilder.toString();
     }
 
-    private String getTitleForAICHatRoom(String sentPrompt, String receivedResponse){
-        String titlePrompt = "Đặt tiêu đề cho chat: User: " + sentPrompt + " | AI: " + receivedResponse
-                + ". Quy tắc: < 10 từ, không dùng ngoặc kép, chỉ trả về text tiêu đề. Ngôn ngữ trả về tùy thuộc vào ngôn ngữ của prompt. LƯU Ý, CHỈ TRẢ VỀ TIÊU ĐỀ, KHÔNG THÊM BẤT KỲ KÝ TỰ, NỘI DUNG NÀO KHÁC.";
-        return aiChatHelper.useAi(titlePrompt, List.of(),"gpt-5-nano", 50);
-    }
-
     private void validateFiles(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) return;
 
@@ -250,6 +258,18 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         return UUID.randomUUID() + ext;
     }
 
+    private String getGlobalSummaries(Long userId, UUID currentRoomId) {
+        List<AIChatRoom> otherRooms = aiChatRoomRepository
+                .findTop5ByUserIdAndIdNotOrderByUpdatedAtDesc(userId, currentRoomId);
+
+        if (otherRooms.isEmpty()) return "";
+
+        return otherRooms.stream()
+                .filter(room -> StringUtils.hasText(room.getLatestSummary())) // Chỉ lấy phòng có summary
+                .map(room -> String.format("- Chủ đề '%s': %s", room.getTitle(), room.getLatestSummary()))
+                .collect(Collectors.joining("\n"));
+    }
+
     private List<AIMessage.Attachment> processingMediaFile(List<MultipartFile> files){
         List<AIMessage.Attachment> dbAttachments = new ArrayList<>();
         if (files != null && !files.isEmpty()) {
@@ -263,5 +283,4 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         }
         return dbAttachments;
     }
-
 }
