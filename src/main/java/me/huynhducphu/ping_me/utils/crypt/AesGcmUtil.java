@@ -1,5 +1,8 @@
 package me.huynhducphu.ping_me.utils.crypt;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
@@ -10,10 +13,15 @@ import java.util.Base64;
  * Admin 11/6/2025
  *
  **/
-public class AesGcmUtil {
-    private static final String AES_GCM_NO_PADDING = "AES/GCM/NoPadding";
-    private static final int GCM_TAG_LENGTH = 128;
-    private static final int GCM_IV_LENGTH = 12;
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public final class AesGcmUtil {
+
+    static String AES_GCM_NO_PADDING = "AES/GCM/NoPadding";
+    static int GCM_TAG_LENGTH = 128;
+    static int GCM_IV_LENGTH = 12;
+
+    private AesGcmUtil() {
+    }
 
     public static String encrypt(String plaintext, SecretKey key, byte[] iv) throws Exception {
         Cipher cipher = Cipher.getInstance(AES_GCM_NO_PADDING);
