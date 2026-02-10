@@ -3,15 +3,11 @@ package me.huynhducphu.ping_me.config.feign;
 import feign.RequestInterceptor;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.NonFinal;
 import me.huynhducphu.ping_me.utils.crypt.HmacUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
+import java.net.URI;
 
 /**
  * Admin 2/10/2026
@@ -28,9 +24,14 @@ public class MailFeignConfig {
         return request -> {
             long ts = System.currentTimeMillis() / 1000;
 
-
             String fullUrl = request.url();
-            String path = fullUrl.substring(fullUrl.indexOf("/", 8));
+
+            String path;
+            try {
+                path = URI.create(fullUrl).getPath();
+            } catch (Exception e) {
+                path = fullUrl;
+            }
 
             String payload = request.method() + path + ts;
             String signature = HmacUtils.hmacSha256(secret, payload);
