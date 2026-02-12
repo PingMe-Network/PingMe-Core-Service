@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.response.ai.AIChatResponseDTO;
+import me.huynhducphu.ping_me.dto.response.ai.AIChatRoomInformationDTO;
 import me.huynhducphu.ping_me.model.ai.AIChatRoom;
 import me.huynhducphu.ping_me.model.ai.AIMessage;
 import me.huynhducphu.ping_me.service.ai.chatbox.AIChatBoxService;
@@ -47,7 +48,7 @@ public class AIChatBoxController {
 
     @Operation(summary = "Lấy danh sách các phòng chat của user (Sidebar)")
     @GetMapping("/rooms")
-    public ResponseEntity<ApiResponse<Slice<AIChatRoom>>> getUserChatRooms(
+    public ResponseEntity<ApiResponse<Slice<AIChatRoomInformationDTO>>> getUserChatRooms(
             @RequestParam(defaultValue = "0") int page, // Mặc định trang 0
             @RequestParam(defaultValue = "10") int size // Mặc định 10 phòng
     ) {
@@ -60,10 +61,11 @@ public class AIChatBoxController {
     )
     @PostMapping(value = "/chat", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<AIChatResponseDTO>> chatWithAI(
-            @RequestParam(required = false) UUID chatRoomId,
-            @RequestParam(required = true) String prompt,
-            @RequestPart(required = false) List<MultipartFile> files
+            @RequestParam(value = "chatRoomId", required = false) UUID chatRoomId,
+            @RequestParam(value = "prompt", required = true) String prompt,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
+
         AIChatResponseDTO response = service.sendMessageToAI(chatRoomId, prompt, files);
         return ResponseEntity.ok(new ApiResponse<>(response));
     }
