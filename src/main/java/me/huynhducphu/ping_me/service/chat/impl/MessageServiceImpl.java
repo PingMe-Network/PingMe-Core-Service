@@ -414,87 +414,49 @@ public class MessageServiceImpl implements MessageService {
             String beforeId,
             Integer size
     ) {
-
-        // --------------------------------------------------------------------------------
-        // Validate input
-        // --------------------------------------------------------------------------------
-        if (roomId == null || size == null)
-            throw new IllegalArgumentException("Invalid parameters");
+        validateHistoryRequest(roomId, size);
 
         var currentUser = currentUserProvider.get();
         var memberId = new RoomMemberId(roomId, currentUser.getId());
-
         if (!roomParticipantRepository.existsById(memberId))
             throw new RuntimeException("Not a room member");
 
         int fixed = Math.max(1, Math.min(size, 20));
-        // --------------------------------------------------------------------------------
 
-        // =========================================================================================
-        // Flow lấy lịch sử tin nhắn (3 bước):
-        // 1) beforeId == null → lấy newest messages (ưu tiên cache, fallback DB)
-        // 2) beforeId != null → cố lấy từ cache (older messages)
-        // 3) Nếu cache rỗng → load thêm từ DB, rồi append vào cache
-        // =========================================================================================
+        var cached = loadFromCache(roomId, beforeId, fixed);
+        if (cached != null) return cached;
 
-
-        // ----------------------------------------
-        // Case 1: Lấy batch mới nhất (beforeId == null)
-        // Ưu tiên đọc cache; nếu cache trống → đọc DB và cache lại.
-        // ----------------------------------------
-        if (beforeId == null) {
-
-            // -----------------------------
-            // 1. Ưu tiên đọc cache
-            // -----------------------------
-            if (cacheEnabled) {
-                var cached = messageCachingService.getMessages(roomId, null, fixed);
-                if (!cached.isEmpty()) {
-                    String nextBeforeId = cached.getLast().getId();
-                    return new HistoryMessageResponse(cached, true, nextBeforeId);
-                }
-            }
-
-            // -----------------------------
-            // 2. Fallback DB
-            // -----------------------------
-            var db = loadFromDbCursor(roomId, null, fixed);
-
-            // -----------------------------
-            // 3. Cache lại (nếu bật cache)
-            // -----------------------------
-            if (cacheEnabled && !db.getMessageResponses().isEmpty()) {
-                messageCachingService.cacheMessages(roomId, db.getMessageResponses());
-            }
-
-            return db;
-        }
-
-
-        // ----------------------------------------
-        // Case 2: beforeId != null → cố lấy older messages từ cache
-        // Nếu cache có → trả luôn, tránh hit DB
-        // ----------------------------------------
-        if (cacheEnabled) {
-            var older = messageCachingService.getMessages(roomId, beforeId, fixed);
-
-            if (!older.isEmpty()) {
-                String nextBeforeId = older.getLast().getId();
-                return new HistoryMessageResponse(older, true, nextBeforeId);
-            }
-        }
-
-
-        // ----------------------------------------
-        // Case 3: Cache không có → fallback DB
-        // Sau khi load từ DB thì append vào cache
-        // ----------------------------------------
         var db = loadFromDbCursor(roomId, beforeId, fixed);
-
-        if (cacheEnabled && !db.getMessageResponses().isEmpty())
-            messageCachingService.appendOlderMessages(roomId, db.getMessageResponses());
+        cacheHistoryPage(roomId, beforeId, db);
 
         return db;
+    }
+
+
+    private void validateHistoryRequest(Long roomId, Integer size) {
+        if (roomId == null || size == null)
+            throw new IllegalArgumentException("Invalid parameters");
+    }
+
+    private HistoryMessageResponse loadFromCache(Long roomId, String beforeId, int size) {
+        if (!cacheEnabled) return null;
+
+        var cached = messageCachingService.getMessages(roomId, beforeId, size);
+        if (cached.isEmpty()) return null;
+
+        String nextBeforeId = cached.getLast().getId();
+        boolean hasMore = cached.size() == size;
+
+        return new HistoryMessageResponse(cached, hasMore, nextBeforeId);
+    }
+
+    private void cacheHistoryPage(Long roomId, String beforeId, HistoryMessageResponse db) {
+        if (!cacheEnabled || db.getMessageResponses().isEmpty()) return;
+
+        if (beforeId == null)
+            messageCachingService.cacheMessages(roomId, db.getMessageResponses());
+        else
+            messageCachingService.appendOlderMessages(roomId, db.getMessageResponses());
     }
 
     private HistoryMessageResponse loadFromDbCursor(
