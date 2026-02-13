@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.service.authentication.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.config.auth.AuthConfiguration;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.service.authentication.JwtService;
@@ -15,10 +17,11 @@ import java.time.temporal.ChronoUnit;
  **/
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class JwtServiceImpl implements JwtService {
 
-    private final JwtEncoder jwtEncoder;
-    private final JwtDecoder jwtDecoder;
+    JwtEncoder jwtEncoder;
+    JwtDecoder jwtDecoder;
 
 
     @Override

@@ -1,5 +1,7 @@
 package me.huynhducphu.ping_me.service.authentication.impl;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.authentication.SubmitSessionMetaRequest;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserDeviceMetaResponse;
 import me.huynhducphu.ping_me.model.common.DeviceMeta;
@@ -21,11 +23,11 @@ import java.util.Set;
  * Admin 8/16/2025
  **/
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
 
-
-    private final RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate;
-    private final ModelMapper modelMapper;
+    RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate;
+    ModelMapper modelMapper;
 
     public RefreshTokenRedisServiceImpl(
             @Qualifier("redisDeviceMetaTemplate")
