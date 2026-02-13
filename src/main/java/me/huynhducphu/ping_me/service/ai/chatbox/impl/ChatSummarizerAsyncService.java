@@ -51,7 +51,7 @@ public class ChatSummarizerAsyncService {
                     recentMessages
             );
             // 5. Gọi AI để tạo Summary Mới
-            String newSummary = aiChatHelper.useAi(prompt, List.of(),"gpt-5-nano", 100);
+            String newSummary = aiChatHelper.useAi(prompt, List.of(),"gpt-4o-mini", 100);
             // 6. Cập nhật và Lưu vào DB
             room.setLatestSummary(newSummary);
             room.setInteractCountSinceLastSummary(0); // Reset bộ đếm về 0

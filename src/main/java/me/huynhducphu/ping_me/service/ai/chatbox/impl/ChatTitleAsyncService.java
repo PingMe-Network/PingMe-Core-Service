@@ -31,7 +31,7 @@ public class ChatTitleAsyncService {
     private String getTitleForAICHatRoom(String sentPrompt, String receivedResponse){
         String titlePrompt = "Đặt tiêu đề cho chat: User: " + sentPrompt + " | AI: " + receivedResponse
                 + ". Quy tắc: < 10 từ, không dùng ngoặc kép, chỉ trả về text tiêu đề. Ngôn ngữ trả về tùy thuộc vào ngôn ngữ của prompt. LƯU Ý, CHỈ TRẢ VỀ TIÊU ĐỀ, KHÔNG THÊM BẤT KỲ KÝ TỰ, NỘI DUNG NÀO KHÁC.";
-        return aiChatHelper.useAi(titlePrompt, List.of(),"gpt-5-nano", 50);
+        return aiChatHelper.useAi(titlePrompt, List.of(),"gpt-4o-mini", 50);
     }
 
     @Async // Đẩy vào TaskExecutor riêng
