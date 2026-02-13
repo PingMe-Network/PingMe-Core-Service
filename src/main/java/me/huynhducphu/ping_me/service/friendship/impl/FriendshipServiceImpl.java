@@ -6,13 +6,16 @@ import me.huynhducphu.ping_me.dto.request.friendship.FriendInvitationRequest;
 import me.huynhducphu.ping_me.dto.response.friendship.HistoryFriendshipResponse;
 import me.huynhducphu.ping_me.dto.response.friendship.UserFriendshipStatsResponse;
 import me.huynhducphu.ping_me.dto.response.user.UserSummaryResponse;
-import me.huynhducphu.ping_me.dto.ws.friendship.common.FriendshipEventType;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.chat.Friendship;
 import me.huynhducphu.ping_me.model.constant.FriendshipStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.repository.jpa.chat.FriendshipRepository;
-import me.huynhducphu.ping_me.service.friendship.event.FriendshipEvent;
+import me.huynhducphu.ping_me.service.friendship.event.FriendshipAcceptedEvent;
+import me.huynhducphu.ping_me.service.friendship.event.FriendshipCanceledEvent;
+import me.huynhducphu.ping_me.service.friendship.event.FriendshipDeletedEvent;
+import me.huynhducphu.ping_me.service.friendship.event.FriendshipInvitedEvent;
+import me.huynhducphu.ping_me.service.friendship.event.FriendshipRejectedEvent;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.ApplicationEventPublisher;
@@ -80,11 +83,7 @@ public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.fri
         friendshipRepository.save(friendship);
 
         // Bắn Event Websocket
-        eventPublisher.publishEvent(new FriendshipEvent(
-                FriendshipEventType.INVITED,
-                friendship,
-                friendship.getUserB().getId()
-        ));
+        eventPublisher.publishEvent(new FriendshipInvitedEvent(friendship));
     }
 
     @Override
@@ -109,8 +108,7 @@ public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.fri
         friendship.setFriendshipStatus(FriendshipStatus.ACCEPTED);
 
         // Bắn Event Websocket
-        eventPublisher.publishEvent(new FriendshipEvent(
-                FriendshipEventType.ACCEPTED,
+        eventPublisher.publishEvent(new FriendshipAcceptedEvent(
                 friendship,
                 friendship.getUserA().getId()
         ));
@@ -139,8 +137,7 @@ public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.fri
         friendshipRepository.delete(friendship);
 
         // Bắn Event Websocket
-        eventPublisher.publishEvent(new FriendshipEvent(
-                FriendshipEventType.REJECTED,
+        eventPublisher.publishEvent(new FriendshipRejectedEvent(
                 friendship,
                 friendship.getUserA().getId()
         ));
@@ -169,8 +166,7 @@ public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.fri
         friendshipRepository.delete(friendship);
 
         // Bắn Event Websocket
-        eventPublisher.publishEvent(new FriendshipEvent(
-                FriendshipEventType.CANCELED,
+        eventPublisher.publishEvent(new FriendshipCanceledEvent(
                 friendship,
                 friendship.getUserB().getId()
         ));
@@ -201,8 +197,7 @@ public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.fri
 
         // Bắn Event Websocket
         var isUserA = friendship.getUserA().getId().equals(currentUser.getId());
-        eventPublisher.publishEvent(new FriendshipEvent(
-                FriendshipEventType.DELETED,
+        eventPublisher.publishEvent(new FriendshipDeletedEvent(
                 friendship,
                 isUserA ? friendship.getUserB().getId() : friendship.getUserA().getId()
         ));
