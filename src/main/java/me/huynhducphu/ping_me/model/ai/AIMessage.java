@@ -1,5 +1,6 @@
 package me.huynhducphu.ping_me.model.ai;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import me.huynhducphu.ping_me.model.constant.AIMessageType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -35,7 +37,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class AIMessage {
+public class AIMessage implements Persistable<UUID> {
     @Id
     @EqualsAndHashCode.Include
     private UUID id;
@@ -65,5 +67,11 @@ public class AIMessage {
     public static class Attachment {
         private String url;
         private String fileType; // "image/png", "application/pdf", v.v.
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return createdAt == null;
     }
 }
