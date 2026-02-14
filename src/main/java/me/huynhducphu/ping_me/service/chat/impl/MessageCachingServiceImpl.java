@@ -33,167 +33,143 @@ public class MessageCachingServiceImpl implements MessageCachingService {
         this.objectMapper = objectMapper;
     }
 
-    /* ========================================================================== */
-    /* WRITE → REDIS CACHE                             */
-    /* ========================================================================== */
-
     @Override
     public void cacheNewMessage(Long roomId, MessageResponse message) {
         String key = buildKey(roomId);
-        try {
-            String json = objectMapper.writeValueAsString(message);
-            redisTemplate.opsForList().leftPush(key, json);
-            redisTemplate.opsForList().trim(key, 0, MAX_CACHE_MESSAGES - 1);
-            touchTtl(key);
-        } catch (Exception ignored) {
-        }
+        String json = toJson(message);
+        if (json == null) return;
+
+        redisTemplate.opsForList().leftPush(key, json);
+        trimAndTouch(key);
     }
 
     @Override
     public void cacheMessages(Long roomId, List<MessageResponse> messages) {
-        if (messages == null || messages.isEmpty()) return;
+        if (isEmpty(messages)) return;
 
         String key = buildKey(roomId);
-
-        try {
-            for (MessageResponse m : messages) {
-                String json = objectMapper.writeValueAsString(m);
+        for (MessageResponse message : messages) {
+            String json = toJson(message);
+            if (json != null)
                 redisTemplate.opsForList().leftPush(key, json);
-            }
-
-            redisTemplate.opsForList().trim(key, 0, MAX_CACHE_MESSAGES - 1);
-            touchTtl(key);
-        } catch (Exception ignored) {
         }
+
+        trimAndTouch(key);
     }
 
     @Override
     public void appendOlderMessages(Long roomId, List<MessageResponse> messages) {
-        if (messages == null || messages.isEmpty()) return;
+        if (isEmpty(messages)) return;
 
         String key = buildKey(roomId);
-
-        try {
-            List<MessageResponse> reversedMessagesOrder =
-                    copyAndReverseListMessageResponse(messages);
-
-            for (MessageResponse m : reversedMessagesOrder) {
-                String json = objectMapper.writeValueAsString(m);
+        for (MessageResponse message : copyAndReverse(messages)) {
+            String json = toJson(message);
+            if (json != null)
                 redisTemplate.opsForList().rightPush(key, json);
-            }
-
-            redisTemplate.opsForList().trim(key, 0, MAX_CACHE_MESSAGES - 1);
-            touchTtl(key);
-        } catch (Exception ignored) {
         }
+
+        trimAndTouch(key);
     }
 
-    /* ========================================================================== */
-    /* READ ← REDIS CACHE                              */
-    /* ========================================================================== */
-
     @Override
-    public List<MessageResponse> getMessages(
-            Long roomId,
-            String beforeId,
-            int size
-    ) {
+    public List<MessageResponse> getMessages(Long roomId, String beforeId, int size) {
         String key = buildKey(roomId);
-
         List<String> jsonList = redisTemplate.opsForList().range(key, 0, -1);
-        if (jsonList == null || jsonList.isEmpty()) return List.of();
+        if (isEmpty(jsonList)) return List.of();
 
         List<MessageResponse> all = new ArrayList<>(jsonList.size());
         for (String json : jsonList) {
-            try {
-                all.add(objectMapper.readValue(json, MessageResponse.class));
-            } catch (Exception ignored) {
-            }
+            MessageResponse dto = fromJson(json);
+            if (dto != null)
+                all.add(dto);
         }
 
-        List<MessageResponse> result;
+        if (all.isEmpty()) return List.of();
 
+        List<MessageResponse> selected;
         if (beforeId == null) {
             int end = Math.min(size, all.size());
-            result = new ArrayList<>(all.subList(0, end));
+            selected = new ArrayList<>(all.subList(0, end));
         } else {
-            int beforeIdx = -1;
-            for (int i = 0; i < all.size(); i++) {
-                if (all.get(i).getId().equals(beforeId)) {
-                    beforeIdx = i;
-                    break;
-                }
-            }
+            int beforeIdx = findMessageIndex(all, beforeId);
+            if (beforeIdx < 0) return List.of();
 
-            if (beforeIdx == -1) {
-                return List.of();
-            }
+            int start = beforeIdx + 1;
+            if (start >= all.size()) return List.of();
 
-            int startIdx = beforeIdx + 1;
-            int endIdx = Math.min(startIdx + size, all.size());
-
-            if (startIdx >= all.size()) {
-                return List.of();
-            }
-
-            result = new ArrayList<>(all.subList(startIdx, endIdx));
+            int end = Math.min(start + size, all.size());
+            selected = new ArrayList<>(all.subList(start, end));
         }
 
-        return copyAndReverseListMessageResponse(result);
+        return copyAndReverse(selected);
     }
-
-    /* ========================================================================== */
-    /* UPDATE / REMOVE MESSAGE TRONG CACHE                      */
-    /* ========================================================================== */
 
     @Override
     public void evictRoom(Long roomId) {
-        String key = buildKey(roomId);
-        redisTemplate.delete(key);
+        redisTemplate.delete(buildKey(roomId));
     }
 
     @Override
     public void updateMessage(Long roomId, String messageId, MessageResponse updated) {
         String key = buildKey(roomId);
         List<String> jsonList = redisTemplate.opsForList().range(key, 0, -1);
-        if (jsonList == null || jsonList.isEmpty()) return;
+        if (isEmpty(jsonList)) return;
 
-        try {
-            String updatedJson = objectMapper.writeValueAsString(updated);
+        String updatedJson = toJson(updated);
+        if (updatedJson == null) return;
 
-            for (int i = 0; i < jsonList.size(); i++) {
-                String json = jsonList.get(i);
-                try {
-                    MessageResponse dto = objectMapper.readValue(
-                            json,
-                            MessageResponse.class
-                    );
-                    if (dto.getId().equals(messageId)) {
-                        redisTemplate.opsForList().set(key, i, updatedJson);
-                        touchTtl(key);
-                        break;
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (Exception ignored) {
+        for (int i = 0; i < jsonList.size(); i++) {
+            MessageResponse cached = fromJson(jsonList.get(i));
+            if (cached == null || !cached.getId().equals(messageId)) continue;
+
+            redisTemplate.opsForList().set(key, i, updatedJson);
+            touchTtl(key);
+            return;
         }
     }
 
-    /* ========================================================================== */
-    /* UTILS                                                                      */
-    /* ========================================================================== */
     private String buildKey(Long roomId) {
         return "chat:room:" + roomId + ":messages";
+    }
+
+    private void trimAndTouch(String key) {
+        redisTemplate.opsForList().trim(key, 0, MAX_CACHE_MESSAGES - 1);
+        touchTtl(key);
     }
 
     private void touchTtl(String key) {
         redisTemplate.expire(key, CACHE_TTL);
     }
 
-    private List<MessageResponse> copyAndReverseListMessageResponse(
-            List<MessageResponse> messages
-    ) {
+    private String toJson(MessageResponse message) {
+        try {
+            return objectMapper.writeValueAsString(message);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private MessageResponse fromJson(String json) {
+        try {
+            return objectMapper.readValue(json, MessageResponse.class);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private int findMessageIndex(List<MessageResponse> messages, String messageId) {
+        for (int i = 0; i < messages.size(); i++) {
+            if (messageId.equals(messages.get(i).getId()))
+                return i;
+        }
+        return -1;
+    }
+
+    private static <T> boolean isEmpty(List<T> values) {
+        return values == null || values.isEmpty();
+    }
+
+    private List<MessageResponse> copyAndReverse(List<MessageResponse> messages) {
         var copy = new ArrayList<>(messages);
         Collections.reverse(copy);
         return copy;
