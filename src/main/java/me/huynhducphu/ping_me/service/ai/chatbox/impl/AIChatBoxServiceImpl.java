@@ -174,22 +174,33 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
             String summary
     ) {
         StringBuilder prompt = new StringBuilder();
-        // 1. System Instruction (Định hình vai trò)
+
+        // 1. System Instruction & Critical Rules (Luật thép)
         prompt.append("System: Bạn là trợ lý AI hữu ích trong ứng dụng PingMe.\n");
         prompt.append("Nhiệm vụ: Trả lời câu hỏi người dùng dựa trên các ngữ cảnh được cung cấp dưới đây.\n\n");
-        // 2. Ký ức dài hạn (Summary)
+        prompt.append("<critical_rules>\n");
+        prompt.append("1. ƯU TIÊN HIỆN TẠI: Input và Ảnh (nếu có) ở lượt chat này là sự thật duy nhất. \n");
+        prompt.append("2. QUÊN LỖI CŨ: Nếu lịch sử có câu 'tôi không thấy ảnh', hãy coi đó là lỗi quá khứ và BỎ QUA nó. \n");
+        prompt.append("3. XỬ LÝ ẢNH: Nếu request này có ảnh, bạn BẮT BUỘC phải phân tích nó.\n");
+        prompt.append("</critical_rules>\n\n");
+        // 2. Ký ức dài hạn
         prompt.append("<long_term_memory>\n");
         prompt.append(summary != null && !summary.isEmpty() ? summary : "Chưa có tóm tắt nào.");
         prompt.append("\n</long_term_memory>\n\n");
-        // 3. Ngữ cảnh chéo từ phòng khác (Cross-context)
-        prompt.append("<related_context_from_other_rooms>\n");
-        prompt.append(formatHistory(otherRoomsHistory));
-        prompt.append("</related_context_from_other_rooms>\n\n");
-        // 4. Lịch sử hội thoại hiện tại (Short-term memory)
+        // 3. Ngữ cảnh chéo (Thêm check null để an toàn)
+        if (otherRoomsHistory != null && !otherRoomsHistory.isEmpty()) {
+            prompt.append("<related_context_from_other_rooms>\n");
+            prompt.append(formatHistory(otherRoomsHistory));
+            prompt.append("</related_context_from_other_rooms>\n\n");
+        }
+        // 4. Lịch sử hiện tại
         prompt.append("<current_conversation_history>\n");
         prompt.append(formatHistory(currentRoomHistory));
         prompt.append("</current_conversation_history>\n\n");
-
+        // 5. [QUAN TRỌNG] Lời nhắc cuối cùng (Trigger)
+        // Gom hết các lời dặn dò vào đây và chốt hạ bằng lệnh "Trả lời ngay"
+        prompt.append("\nLƯU Ý CUỐI CÙNG: Tuyệt đối không lặp lại các câu trả lời rập khuôn từ lịch sử.\n");
+        prompt.append("HÃY TRẢ LỜI NGAY BÂY GIỜ dựa trên input mới nhất. Nếu có ảnh, hãy mô tả chi tiết.");
         log.info("B5 : Built Prompt for AI:\n" + prompt);
         return prompt.toString();
     }

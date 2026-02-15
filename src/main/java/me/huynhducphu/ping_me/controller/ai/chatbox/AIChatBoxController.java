@@ -50,7 +50,7 @@ public class AIChatBoxController {
     @GetMapping("/rooms")
     public ResponseEntity<ApiResponse<Slice<AIChatRoomInformationDTO>>> getUserChatRooms(
             @RequestParam(defaultValue = "0") int page, // Mặc định trang 0
-            @RequestParam(defaultValue = "10") int size // Mặc định 10 phòng
+            @RequestParam(defaultValue = "5") int size // Mặc định 5 phòng
     ) {
         return ResponseEntity.ok(new ApiResponse<>(service.getUserChatRooms(page, size)));
     }
@@ -62,7 +62,7 @@ public class AIChatBoxController {
     @PostMapping(value = "/chat", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<AIChatResponseDTO>> chatWithAI(
             @RequestParam(value = "chatRoomId", required = false) UUID chatRoomId,
-            @RequestParam(value = "prompt", required = true) String prompt,
+            @RequestParam(value = "prompt") String prompt,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
 
