@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.service.admin.impl;
+package me.huynhducphu.ping_me.service.user.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
@@ -11,7 +11,7 @@ import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.model.constant.AuthProvider;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
-import me.huynhducphu.ping_me.service.admin.UserManagementService;
+import me.huynhducphu.ping_me.service.user.UserManagementService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;

@@ -11,7 +11,7 @@ import me.huynhducphu.ping_me.dto.admin.response.user.DefaultUserResponse;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.base.PageResponse;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
-import me.huynhducphu.ping_me.service.admin.UserManagementService;
+import me.huynhducphu.ping_me.service.user.UserManagementService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
