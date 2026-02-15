@@ -1,11 +1,13 @@
-package me.huynhducphu.ping_me.service.reels.impl;
+package me.huynhducphu.ping_me.service.reel.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.response.reels.ReelSearchHistoryResponse;
 import me.huynhducphu.ping_me.model.reels.ReelSearchHistory;
 import me.huynhducphu.ping_me.repository.jpa.auth.ReelSearchHistoryRepository;
-import me.huynhducphu.ping_me.service.reels.ReelSearchHistoryService;
+import me.huynhducphu.ping_me.service.reel.ReelSearchHistoryService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,10 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReelSearchHistoryServiceImpl implements ReelSearchHistoryService {
 
-    private final ReelSearchHistoryRepository repo;
-    private final CurrentUserProvider currentUserProvider;
+
+    ReelSearchHistoryRepository reelSearchHistoryRepository;
+    CurrentUserProvider currentUserProvider;
 
     @Override
     public void recordSearch(String query, Integer resultCount) {
@@ -28,7 +32,7 @@ public class ReelSearchHistoryServiceImpl implements ReelSearchHistoryService {
                     .resultCount(resultCount)
                     .user(user)
                     .build();
-            repo.save(h);
+            reelSearchHistoryRepository.save(h);
         } catch (Exception ignored) {
             // avoid breaking search if history saving fails
         }
@@ -37,18 +41,18 @@ public class ReelSearchHistoryServiceImpl implements ReelSearchHistoryService {
     @Override
     public Page<ReelSearchHistoryResponse> getMySearchHistory(Pageable pageable) {
         var user = currentUserProvider.get();
-        var page = repo.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+        var page = reelSearchHistoryRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
         return page.map(this::toDto);
     }
 
     @Override
     public void deleteById(Long id) {
         var user = currentUserProvider.get();
-        var opt = repo.findById(id);
+        var opt = reelSearchHistoryRepository.findById(id);
         if (opt.isPresent()) {
             var rec = opt.get();
             if (rec.getUser() != null && rec.getUser().getId().equals(user.getId())) {
-                repo.deleteById(id);
+                reelSearchHistoryRepository.deleteById(id);
             } else {
                 throw new jakarta.persistence.EntityNotFoundException("Không tìm thấy lịch sử hoặc không có quyền xóa");
             }
@@ -64,7 +68,7 @@ public class ReelSearchHistoryServiceImpl implements ReelSearchHistoryService {
         if (user == null || user.getId() == null) {
             throw new EntityNotFoundException("Người dùng không hợp lệ");
         }
-        repo.deleteAllByUserId(user.getId());
+        reelSearchHistoryRepository.deleteAllByUserId(user.getId());
     }
 
     private ReelSearchHistoryResponse toDto(ReelSearchHistory e) {

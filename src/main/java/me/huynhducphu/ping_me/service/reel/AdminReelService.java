@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.service.reels;
+package me.huynhducphu.ping_me.service.reel;
 
 import me.huynhducphu.ping_me.dto.request.reels.AdminReelFilterRequest;
 import me.huynhducphu.ping_me.dto.response.reels.AdminReelResponse;

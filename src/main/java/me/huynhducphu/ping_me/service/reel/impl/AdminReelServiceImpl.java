@@ -1,7 +1,9 @@
-package me.huynhducphu.ping_me.service.reels.impl;
+package me.huynhducphu.ping_me.service.reel.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.reels.AdminReelFilterRequest;
 import me.huynhducphu.ping_me.dto.response.reels.AdminReelResponse;
 import me.huynhducphu.ping_me.model.constant.ReelStatus;
@@ -18,15 +20,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class AdminReelServiceImpl implements me.huynhducphu.ping_me.service.reels.AdminReelService {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class AdminReelServiceImpl implements me.huynhducphu.ping_me.service.reel.AdminReelService {
 
-    private final ReelRepository reelRepository;
-    private final ReelLikeRepository reelLikeRepository;
-    private final ReelSaveRepository reelSaveRepository;
-    private final ReelCommentRepository reelCommentRepository;
-    private final ReelCommentReactionRepository reactionRepository;
-    private final S3Service s3Service;
-    private final ModelMapper modelMapper;
+    // Repository
+    ReelRepository reelRepository;
+    ReelLikeRepository reelLikeRepository;
+    ReelSaveRepository reelSaveRepository;
+    ReelCommentRepository reelCommentRepository;
+    ReelCommentReactionRepository reactionRepository;
+
+    // Service
+    S3Service s3Service;
+
+    // Mapper
+    ModelMapper modelMapper;
 
     @Override
     public Page<AdminReelResponse> getReels(AdminReelFilterRequest filter, Pageable pageable) {

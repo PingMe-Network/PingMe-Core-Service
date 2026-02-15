@@ -1,7 +1,10 @@
-package me.huynhducphu.ping_me.service.reels.impl;
+package me.huynhducphu.ping_me.service.reel.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import me.huynhducphu.ping_me.dto.request.reels.ReelRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelResponse;
 import me.huynhducphu.ping_me.model.reels.Reel;
@@ -9,7 +12,8 @@ import me.huynhducphu.ping_me.model.reels.ReelLike;
 import me.huynhducphu.ping_me.model.reels.ReelSave;
 import me.huynhducphu.ping_me.model.reels.ReelView;
 import me.huynhducphu.ping_me.repository.jpa.reels.*;
-import me.huynhducphu.ping_me.service.reels.ReelService;
+import me.huynhducphu.ping_me.service.reel.ReelSearchHistoryService;
+import me.huynhducphu.ping_me.service.reel.ReelService;
 import me.huynhducphu.ping_me.service.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.modelmapper.ModelMapper;
@@ -29,25 +33,34 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReelServiceImpl implements ReelService {
 
     @Value("${app.reels.max-video-size}")
-    private DataSize maxReelVideoSize;
+    @NonFinal
+    DataSize maxReelVideoSize;
 
     @Value("${app.reels.folder}")
-    private String reelsFolder;
+    @NonFinal
+    String reelsFolder;
 
-    private final ReelRepository reelRepository;
-    private final ReelLikeRepository reelLikeRepository;
-    private final ReelSaveRepository reelSaveRepository;
-    private final ReelViewRepository reelViewRepository;
-    private final ReelCommentRepository reelCommentRepository;
+    // Repository
+    ReelRepository reelRepository;
+    ReelLikeRepository reelLikeRepository;
+    ReelSaveRepository reelSaveRepository;
+    ReelViewRepository reelViewRepository;
+    ReelCommentRepository reelCommentRepository;
+    ReelCommentReactionRepository reactionRepository;
 
-    private final CurrentUserProvider currentUserProvider;
-    private final S3Service s3Service;
-    private final ModelMapper modelMapper;
-    private final ReelCommentReactionRepository reactionRepository;
-    private final me.huynhducphu.ping_me.service.reels.ReelSearchHistoryService reelSearchHistoryService;
+    // Provider
+    CurrentUserProvider currentUserProvider;
+
+    // Service
+    S3Service s3Service;
+    ReelSearchHistoryService reelSearchHistoryService;
+
+    // Mapper
+    ModelMapper modelMapper;
 
     @Override
     public ReelResponse createReel(ReelRequest dto, MultipartFile video) {

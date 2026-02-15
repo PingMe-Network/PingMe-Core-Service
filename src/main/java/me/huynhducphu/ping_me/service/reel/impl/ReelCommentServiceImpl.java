@@ -1,7 +1,9 @@
-package me.huynhducphu.ping_me.service.reels.impl;
+package me.huynhducphu.ping_me.service.reel.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.reels.UpsertReelCommentRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelCommentResponse;
 import me.huynhducphu.ping_me.model.constant.ReactionType;
@@ -10,7 +12,7 @@ import me.huynhducphu.ping_me.model.reels.ReelCommentReaction;
 import me.huynhducphu.ping_me.repository.jpa.reels.ReelCommentReactionRepository;
 import me.huynhducphu.ping_me.repository.jpa.reels.ReelCommentRepository;
 import me.huynhducphu.ping_me.repository.jpa.reels.ReelRepository;
-import me.huynhducphu.ping_me.service.reels.ReelCommentService;
+import me.huynhducphu.ping_me.service.reel.ReelCommentService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -22,13 +24,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReelCommentServiceImpl implements ReelCommentService {
 
-    private final ReelRepository reelRepository;
-    private final ReelCommentRepository reelCommentRepository;
-    private final CurrentUserProvider currentUserProvider;
-    private final ModelMapper modelMapper;
-    private final ReelCommentReactionRepository reactionRepository;
+    // Repositroy
+    ReelRepository reelRepository;
+    ReelCommentRepository reelCommentRepository;
+    ReelCommentReactionRepository reactionRepository;
+
+    // Provider
+    CurrentUserProvider currentUserProvider;
+
+    // Mapper
+    ModelMapper modelMapper;
+
 
     @Override
     public ReelCommentResponse createComment(Long reelId, UpsertReelCommentRequest dto) {
