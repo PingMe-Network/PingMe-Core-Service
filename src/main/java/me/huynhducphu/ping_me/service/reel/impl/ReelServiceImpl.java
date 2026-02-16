@@ -65,7 +65,7 @@ public class ReelServiceImpl implements ReelService {
 
     /**
      * =====================================
-     * TẠO - CẬP NHẬT - XÓA REEL
+     * TẠO - CẬP NHẬT - XÓA REELS
      * =====================================
      */
 
@@ -134,7 +134,7 @@ public class ReelServiceImpl implements ReelService {
 
     /**
      * =====================================
-     * LẤY REEL
+     * LẤY REELS
      * =====================================
      */
 
@@ -204,59 +204,63 @@ public class ReelServiceImpl implements ReelService {
                 .map(reel -> toReelResponse(reel, me.getId()));
     }
 
+    /**
+     * =====================================
+     * TƯƠNG TÁC VỚI REELS
+     * =====================================
+     */
+
     @Override
     public ReelResponse incrementView(Long reelId) {
-        var me = currentUserProvider.get();
+        var user = currentUserProvider.get();
 
-        var reel = reelRepository.findById(reelId)
+        var reel = reelRepository
+                .findById(reelId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
 
         reel.setViewCount(reel.getViewCount() + 1);
         var saved = reelRepository.save(reel);
 
-        // record view entry if not exists
-        if (!reelViewRepository.existsByReelIdAndUserId(reelId, me.getId())) {
-            reelViewRepository.save(new ReelView(reel, me));
-        }
+        if (!reelViewRepository.existsByReelIdAndUserId(reelId, user.getId()))
+            reelViewRepository.save(new ReelView(reel, user));
 
-        return toReelResponse(saved, me.getId());
+        return toReelResponse(saved, user.getId());
     }
 
     @Override
     public ReelResponse toggleLike(Long reelId) {
-        var me = currentUserProvider.get();
+        var user = currentUserProvider.get();
 
-        var reel = reelRepository.findById(reelId)
+        var reel = reelRepository
+                .findById(reelId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
 
-        boolean liked = reelLikeRepository.existsByReelIdAndUserId(reelId, me.getId());
+        boolean liked = reelLikeRepository.existsByReelIdAndUserId(reelId, user.getId());
 
-        if (liked) {
-            reelLikeRepository.deleteByReelIdAndUserId(reelId, me.getId());
-        } else {
-            reelLikeRepository.save(new ReelLike(reel, me));
-        }
+        if (liked)
+            reelLikeRepository.deleteByReelIdAndUserId(reelId, user.getId());
+        else
+            reelLikeRepository.save(new ReelLike(reel, user));
 
-        return toReelResponse(reel, me.getId());
+        return toReelResponse(reel, user.getId());
     }
 
     @Override
     public ReelResponse toggleSave(Long reelId) {
-        var me = currentUserProvider.get();
+        var user = currentUserProvider.get();
 
-        var reel = reelRepository.findById(reelId)
+        var reel = reelRepository
+                .findById(reelId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
 
-        boolean saved = reelSaveRepository.existsByReelIdAndUserId(reelId, me.getId());
+        boolean saved = reelSaveRepository.existsByReelIdAndUserId(reelId, user.getId());
 
-        if (saved) {
-            // remove save efficiently
-            reelSaveRepository.deleteByReelIdAndUserId(reelId, me.getId());
-        } else {
-            reelSaveRepository.save(new me.huynhducphu.ping_me.model.reels.ReelSave(reel, me));
-        }
+        if (saved)
+            reelSaveRepository.deleteByReelIdAndUserId(reelId, user.getId());
+        else
+            reelSaveRepository.save(new me.huynhducphu.ping_me.model.reels.ReelSave(reel, user));
 
-        return toReelResponse(reel, me.getId());
+        return toReelResponse(reel, user.getId());
     }
 
     /**
