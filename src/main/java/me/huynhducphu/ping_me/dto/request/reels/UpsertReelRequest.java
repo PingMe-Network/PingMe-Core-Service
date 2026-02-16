@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class ReelRequest {
+public class UpsertReelRequest {
 
     @Size(max = 200, message = "Caption không quá 200 ký tự")
     private String caption;

@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import me.huynhducphu.ping_me.dto.request.reels.ReelRequest;
+import me.huynhducphu.ping_me.dto.request.reels.UpsertReelRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelResponse;
 import me.huynhducphu.ping_me.model.reels.Reel;
 import me.huynhducphu.ping_me.model.reels.ReelLike;
@@ -16,6 +16,7 @@ import me.huynhducphu.ping_me.service.reel.ReelSearchHistoryService;
 import me.huynhducphu.ping_me.service.reel.ReelService;
 import me.huynhducphu.ping_me.service.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -69,20 +70,10 @@ public class ReelServiceImpl implements ReelService {
      */
 
     @Override
-    public ReelResponse createReel(ReelRequest dto, MultipartFile video) {
+    public ReelResponse createReel(UpsertReelRequest dto, MultipartFile video) {
         var user = currentUserProvider.get();
 
-        if (video == null || video.isEmpty())
-            throw new IllegalArgumentException("Video không được bỏ trống");
-
-        String contentType = video.getContentType();
-        if (contentType == null || !contentType.startsWith("video/"))
-            throw new IllegalArgumentException("File upload phải là video");
-
-        String original = video.getOriginalFilename();
-        String ext = (original != null && original.contains("."))
-                ? original.substring(original.lastIndexOf("."))
-                : ".mp4";
+        String ext = getFileExtension(video);
 
         String randomFileName = UUID.randomUUID() + ext;
         long maxBytes = maxReelVideoSize.toBytes();
@@ -100,53 +91,25 @@ public class ReelServiceImpl implements ReelService {
         return toReelResponse(saved, user.getId());
     }
 
+
     @Override
-    public ReelResponse updateReel(Long reelId, ReelRequest dto, MultipartFile video) {
+    public ReelResponse updateReel(Long reelId, UpsertReelRequest dto) {
         var user = currentUserProvider.get();
 
         var reel = reelRepository.findById(reelId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
 
-        if (!reel.getUser().getId().equals(user.getId())) {
+        if (!reel.getUser().getId().equals(user.getId()))
             throw new AccessDeniedException("Bạn không có quyền cập nhật Reel này");
-        }
 
-        if (dto.getCaption() != null) {
+
+        if (dto.getCaption() != null)
             reel.setCaption(dto.getCaption());
-        }
+
 
         List<String> normalized = normalizeHashtags(dto.getHashtags());
         reel.setHashtags(normalized);
 
-        if (video != null && !video.isEmpty()) {
-            String contentType = video.getContentType();
-            if (contentType == null || !contentType.startsWith("video/")) {
-                throw new IllegalArgumentException("File upload phải là video");
-            }
-
-            // xóa video cũ trước
-            if (reel.getVideoUrl() != null) {
-                s3Service.deleteFileByUrl(reel.getVideoUrl());
-            }
-
-            String original = video.getOriginalFilename();
-            String ext = (original != null && original.contains("."))
-                    ? original.substring(original.lastIndexOf("."))
-                    : ".mp4";
-
-            String randomFileName = UUID.randomUUID() + ext;
-            long maxBytes = maxReelVideoSize.toBytes();
-
-            String url = s3Service.uploadFile(
-                    video,
-                    reelsFolder,
-                    randomFileName,
-                    true,
-                    maxBytes
-            );
-
-            reel.setVideoUrl(url);
-        }
 
         var saved = reelRepository.save(reel);
         return toReelResponse(saved, user.getId());
@@ -330,6 +293,20 @@ public class ReelServiceImpl implements ReelService {
                 .map(String::toLowerCase)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    private static String getFileExtension(MultipartFile video) {
+        if (video == null || video.isEmpty())
+            throw new IllegalArgumentException("Video không được bỏ trống");
+
+        String contentType = video.getContentType();
+        if (contentType == null || !contentType.startsWith("video/"))
+            throw new IllegalArgumentException("File upload phải là video");
+
+        String original = video.getOriginalFilename();
+        return (original != null && original.contains("."))
+                ? original.substring(original.lastIndexOf("."))
+                : ".mp4";
     }
 
 }
