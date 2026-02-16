@@ -6,12 +6,12 @@ import me.huynhducphu.ping_me.model.common.BaseEntity;
 
 import java.time.LocalDateTime;
 
-@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "song_play_history")
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 @Builder
 public class SongPlayHistory extends BaseEntity {
     @Id

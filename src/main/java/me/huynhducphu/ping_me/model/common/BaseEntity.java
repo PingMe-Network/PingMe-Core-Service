@@ -3,7 +3,10 @@ package me.huynhducphu.ping_me.model.common;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -17,7 +20,10 @@ import java.time.LocalDateTime;
  **/
 @EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
-@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class BaseEntity {
 
     @CreatedDate

@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.config.websocket.auth.UserSocketPrincipal;
-import me.huynhducphu.ping_me.utils.UserMapper;
+import me.huynhducphu.ping_me.utils.mapper.UserMapper;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;

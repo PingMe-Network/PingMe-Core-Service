@@ -1,0 +1,107 @@
+package me.huynhducphu.ping_me.service.reel.impl;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import me.huynhducphu.ping_me.dto.request.reels.AdminReelFilterRequest;
+import me.huynhducphu.ping_me.dto.response.reels.AdminReelResponse;
+import me.huynhducphu.ping_me.model.constant.ReelStatus;
+import me.huynhducphu.ping_me.model.reels.Reel;
+import me.huynhducphu.ping_me.repository.jpa.reels.*;
+import me.huynhducphu.ping_me.repository.jpa.reels.spec.ReelSpecifications;
+import me.huynhducphu.ping_me.service.s3.S3Service;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class AdminReelServiceImpl implements me.huynhducphu.ping_me.service.reel.AdminReelService {
+
+    // Repository
+    ReelRepository reelRepository;
+    ReelLikeRepository reelLikeRepository;
+    ReelSaveRepository reelSaveRepository;
+    ReelCommentRepository reelCommentRepository;
+    ReelCommentReactionRepository reactionRepository;
+
+    // Service
+    S3Service s3Service;
+
+    // Mapper
+    ModelMapper modelMapper;
+
+    @Override
+    public Page<AdminReelResponse> getReels(AdminReelFilterRequest filter, Pageable pageable) {
+        return reelRepository.findAll(ReelSpecifications.byFilter(filter), pageable)
+                .map(this::toAdminResponse);
+    }
+
+    @Override
+    public AdminReelResponse getDetail(Long reelId) {
+        var reel = reelRepository.findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+        return toAdminResponse(reel);
+    }
+
+    @Override
+    public AdminReelResponse updateCaption(Long reelId, String caption) {
+        var reel = reelRepository.findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        reel.setCaption(caption);
+        var saved = reelRepository.save(reel);
+        return toAdminResponse(saved);
+    }
+
+    @Override
+    public AdminReelResponse hideReel(Long reelId, String adminNote) {
+        var reel = reelRepository.findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+        reel.setStatus(ReelStatus.HIDDEN);
+        reel.setAdminNote(adminNote);
+        var saved = reelRepository.save(reel);
+        return toAdminResponse(saved);
+    }
+
+    @Override
+    public void hardDelete(Long reelId) {
+        var reel = reelRepository.findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        reactionRepository.deleteAllByCommentReelId(reelId);
+        reelCommentRepository.deleteAllByReelId(reelId);
+        reelLikeRepository.deleteAllByReelId(reelId);
+        reelSaveRepository.deleteAllByReelId(reelId);
+
+        if (reel.getVideoUrl() != null) {
+            s3Service.deleteFileByUrl(reel.getVideoUrl());
+        }
+
+        reelRepository.delete(reel);
+    }
+
+    private AdminReelResponse toAdminResponse(Reel reel) {
+        AdminReelResponse res = modelMapper.map(reel, AdminReelResponse.class);
+
+        long likeCount = reelLikeRepository.countByReelId(reel.getId());
+        long commentCount = reelCommentRepository.countByReelId(reel.getId());
+        long saveCount = reelSaveRepository.countByReelId(reel.getId());
+
+        res.setLikeCount(likeCount);
+        res.setCommentCount(commentCount);
+        res.setSaveCount(saveCount);
+
+        res.setUserId(reel.getUser().getId());
+        res.setUserName(reel.getUser().getName());
+        res.setUserAvatarUrl(reel.getUser().getAvatarUrl());
+        // res.setStatus(reel.getStatus().name());
+        // res.setAdminNote(reel.getAdminNote());
+        return res;
+    }
+}

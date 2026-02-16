@@ -11,11 +11,10 @@ import java.util.Set;
 
 @Entity
 @Table(name = "playlists")
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class Playlist extends BaseEntity {
 
     @Id

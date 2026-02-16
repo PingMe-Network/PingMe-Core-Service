@@ -1,10 +1,7 @@
 package me.huynhducphu.ping_me.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.huynhducphu.ping_me.model.authorization.Role;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
@@ -21,8 +18,8 @@ import java.time.LocalDate;
 @Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
+@Getter
+@Setter
 public class User extends BaseEntity {
 
     @Id
@@ -62,4 +59,5 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "account_status", nullable = false)
     AccountStatus accountStatus;
+
 }

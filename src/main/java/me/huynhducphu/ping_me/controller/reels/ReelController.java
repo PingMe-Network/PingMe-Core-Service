@@ -7,11 +7,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.base.PageResponse;
-import me.huynhducphu.ping_me.dto.request.reels.ReelRequest;
+import me.huynhducphu.ping_me.dto.request.reels.UpsertReelRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelResponse;
 import me.huynhducphu.ping_me.dto.response.reels.ReelSearchHistoryResponse;
-import me.huynhducphu.ping_me.service.reels.ReelSearchHistoryService;
-import me.huynhducphu.ping_me.service.reels.ReelService;
+import me.huynhducphu.ping_me.service.reel.ReelSearchHistoryService;
+import me.huynhducphu.ping_me.service.reel.ReelService;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/reels")
 @RequiredArgsConstructor
+@NullMarked
 public class ReelController {
 
     private final ReelService reelService;
@@ -46,7 +48,7 @@ public class ReelController {
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<ReelResponse>> createReel(
             @Parameter(description = "JSON dữ liệu reel", required = true)
-            @RequestPart("data") ReelRequest data,
+            @RequestPart("data") UpsertReelRequest data,
 
             @Parameter(description = "File video reel", required = true)
             @RequestPart("video") MultipartFile video
@@ -188,28 +190,9 @@ public class ReelController {
             @PathVariable Long reelId,
 
             @Parameter(description = "JSON dữ liệu reel", required = true)
-            @RequestPart("data") ReelRequest data,
-
-            @Parameter(description = "Video mới (optional)")
-            @RequestPart(value = "video", required = false) MultipartFile video
+            @RequestPart("data") UpsertReelRequest data
     ) {
-        var res = reelService.updateReel(reelId, data, video);
-        return ResponseEntity.ok(new ApiResponse<>(res));
-    }
-
-    @Operation(
-            summary = "Cập nhật reel (JSON)",
-            description = "Cập nhật caption / hashtag không upload video"
-    )
-    @PatchMapping(value = "{reelId}", consumes = "application/json")
-    public ResponseEntity<ApiResponse<ReelResponse>> patchReel(
-            @Parameter(description = "ID reel", example = "1", required = true)
-            @PathVariable Long reelId,
-
-            @Parameter(description = "Dữ liệu cập nhật reel", required = true)
-            @RequestBody ReelRequest data
-    ) {
-        var res = reelService.updateReel(reelId, data, null);
+        var res = reelService.updateReel(reelId, data);
         return ResponseEntity.ok(new ApiResponse<>(res));
     }
 

@@ -14,8 +14,8 @@ import java.util.List;
 @Table(name = "permissions")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
+@Getter
+@Setter
 public class Permission extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

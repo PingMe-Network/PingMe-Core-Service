@@ -22,7 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -55,8 +58,8 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         if (!room.getUserId().equals(currentUserId)) {
             throw new AccessDeniedException("Bạn không có quyền xem tin nhắn này!");
         }
-        if(pageSize % 2 !=0){
-            pageSize +=1; //đảm bảo pageSize luôn là số chẵn để phân bổ đều tin nhắn giữa User và AI
+        if (pageSize % 2 != 0) {
+            pageSize += 1; //đảm bảo pageSize luôn là số chẵn để phân bổ đều tin nhắn giữa User và AI
         }
         // Bước 2: Lấy tin nhắn (Của cả User VÀ AI)
         // Trả về Slice (Thay vì List)
@@ -65,7 +68,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         return aiMessageRepository.findByChatRoomIdOrderByCreatedAtDesc(chatRoomId, pageable);
     }
 
-    public Slice<AIChatRoomInformationDTO> getUserChatRooms(int pageNumber, int pageSize){
+    public Slice<AIChatRoomInformationDTO> getUserChatRooms(int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Long userId = currentUserProvider.get().getId();
         Slice<AIChatRoom> chatRoomsSlice = aiChatRoomRepository.findByUserIdOrderByUpdatedAtDesc(userId, pageable);
@@ -78,7 +81,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         validatePrompt(prompt);
         Long userId = currentUserProvider.get().getId();
         boolean isNewRoom = false;
-        if(chatRoomId == null) {
+        if (chatRoomId == null) {
             isNewRoom = true;
             AIChatRoom newChatRoom = new AIChatRoom();
             newChatRoom.setId(UUID.randomUUID());
@@ -86,7 +89,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
             // Lưu chat room mới vào database
             chatRoomId = newChatRoom.getId();
             aiChatRoomRepository.save(newChatRoom);
-        }else if (!aiChatRoomRepository.existsById(chatRoomId)) {
+        } else if (!aiChatRoomRepository.existsById(chatRoomId)) {
             throw new EntityNotFoundException("Chat room không tồn tại!");
         }
         // Tải file lên S3 và lưu URL vào database
@@ -116,14 +119,14 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         // Cập nhật thông tin phòng chat
         AIChatRoom currentChatRoom = aiChatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat room không tồn tại!"));
-        currentChatRoom.setInteractCountSinceLastSummary(currentChatRoom.getInteractCountSinceLastSummary()+1);
-        currentChatRoom.setTotalMsgCount(currentChatRoom.getTotalMsgCount()+2);
+        currentChatRoom.setInteractCountSinceLastSummary(currentChatRoom.getInteractCountSinceLastSummary() + 1);
+        currentChatRoom.setTotalMsgCount(currentChatRoom.getTotalMsgCount() + 2);
         aiChatRoomRepository.save(currentChatRoom);
-        if(currentChatRoom.getTitle()==null){
+        if (currentChatRoom.getTitle() == null) {
             chatTitleAsyncService.generateAndBroadcastTitle(chatRoomId, prompt, response);
-        }else{
+        } else {
             // Cứ sau mỗi 10 tin nhắn, ta sẽ yêu cầu GPT-5 Nano tóm tắt cuộc trò chuyện để làm ký ức dài hạn
-            if(currentChatRoom.getInteractCountSinceLastSummary() >= 10){
+            if (currentChatRoom.getInteractCountSinceLastSummary() >= 10) {
                 // Gọi hàm tóm tắt hội thoại (chạy ngầm, không block luồng chính)
                 chatSummarizerService.checkAndSummarize(chatRoomId);
             }
@@ -149,15 +152,14 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
                 otherRoomsMsgs,
                 combinedSummary
         );
-        return aiChatHelper.useAiWithContext(prompt, context, files,"gpt-4o-mini", 1000);
+        return aiChatHelper.useAiWithContext(prompt, context, files, "gpt-4o-mini", 1000);
     }
 
     private List<AIMessage> getOtherMessageHistoryFromAnotherRooms(
             Long userId,
             UUID currentRoomId,
             int pageNumber,
-            int pageSize)
-    {
+            int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         List<AIMessage> otherRoomsMsgs = new ArrayList<>(
                 aiMessageRepository
@@ -245,7 +247,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
         }
     }
 
-    private void validatePrompt(String prompt){
+    private void validatePrompt(String prompt) {
         if (prompt.length() > 4000) {
             throw new IllegalArgumentException("Câu hỏi quá dài! Vui lòng tóm tắt lại dưới 4000 ký tự.");
         }
@@ -272,7 +274,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
                 .collect(Collectors.joining("\n"));
     }
 
-    private AIChatRoomInformationDTO mappingFromAIChatRoomToAIChatRoomInformationResponse(AIChatRoom room){
+    private AIChatRoomInformationDTO mappingFromAIChatRoomToAIChatRoomInformationResponse(AIChatRoom room) {
         String displayTitle = (room.getTitle() != null && !room.getTitle().isEmpty())
                 ? room.getTitle()
                 : "Đang tạo tiêu đề...";
@@ -285,7 +287,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
                 .build();
     }
 
-    private AIChatResponseDTO mappingFromAIMessageToAIChatResponseDTO(String response, UUID chatRoomId, boolean isNewRoom){
+    private AIChatResponseDTO mappingFromAIMessageToAIChatResponseDTO(String response, UUID chatRoomId, boolean isNewRoom) {
         return AIChatResponseDTO.builder()
                 .chatRoomId(chatRoomId)
                 .content(response)
@@ -293,7 +295,7 @@ public class AIChatBoxServiceImpl implements AIChatBoxService {
                 .build();
     }
 
-    private List<AIMessage.Attachment> processingMediaFile(List<MultipartFile> files){
+    private List<AIMessage.Attachment> processingMediaFile(List<MultipartFile> files) {
         List<AIMessage.Attachment> dbAttachments = new ArrayList<>();
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {

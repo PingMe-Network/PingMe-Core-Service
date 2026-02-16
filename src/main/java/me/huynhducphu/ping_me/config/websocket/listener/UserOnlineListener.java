@@ -7,7 +7,7 @@ import me.huynhducphu.ping_me.dto.ws.user_status.UserOnlineStatusRespone;
 import me.huynhducphu.ping_me.model.chat.Friendship;
 import me.huynhducphu.ping_me.service.friendship.FriendshipService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProfileService;
-import me.huynhducphu.ping_me.utils.UserMapper;
+import me.huynhducphu.ping_me.utils.mapper.UserMapper;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;

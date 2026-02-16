@@ -19,8 +19,8 @@ import java.util.Set;
 @Table(name = "songs")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
+@Getter
+@Setter
 @SQLRestriction("is_deleted = false")
 public class Song extends BaseEntity {
     @Id

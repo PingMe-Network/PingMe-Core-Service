@@ -9,11 +9,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "playlist_songs",
         uniqueConstraints = @UniqueConstraint(columnNames = {"playlist_id", "song_id"}))
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class PlaylistSong extends BaseEntity {
 
     @Id

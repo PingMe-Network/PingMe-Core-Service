@@ -8,7 +8,7 @@ import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.base.PageResponse;
 import me.huynhducphu.ping_me.dto.request.reels.AdminReelFilterRequest;
 import me.huynhducphu.ping_me.dto.response.reels.AdminReelResponse;
-import me.huynhducphu.ping_me.service.reels.AdminReelService;
+import me.huynhducphu.ping_me.service.reel.AdminReelService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;

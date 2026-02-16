@@ -1,10 +1,8 @@
 package me.huynhducphu.ping_me.model.reels;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 import me.huynhducphu.ping_me.model.constant.ReelStatus;
@@ -16,51 +14,95 @@ import java.util.List;
 @Table(name = "reels")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
+@Getter
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class Reel extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
+
+    /**
+     * =====================================
+     * Nội dung chính
+     * =====================================
+     */
 
     @Column(nullable = false)
-    private String videoUrl;
+    String videoUrl;
 
     @Column(length = 200)
-    private String caption;
+    String caption;
 
-    // hashtags stored as a collection of individual tags (normalized, without leading '#')
+    @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "reel_hashtags", joinColumns = @JoinColumn(name = "reel_id"))
     @Column(name = "tag", length = 100)
-    private List<String> hashtags = new ArrayList<>();
+    List<String> hashtags = new ArrayList<>();
 
+    /**
+     * =====================================
+     * Trạng thái & Số liệu thống kê
+     * =====================================
+     */
+
+    @Builder.Default
     @Column(nullable = false)
-    private Long viewCount = 0L;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    Long viewCount = 0L;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ReelStatus status = ReelStatus.ACTIVE;
+    ReelStatus status = ReelStatus.ACTIVE;
 
     @Column(length = 500)
-    private String adminNote;
+    String adminNote;
 
-    public Reel(String videoUrl, String caption) {
-        this.videoUrl = videoUrl;
-        this.caption = caption;
-        this.viewCount = 0L;
-    }
+    /**
+     * =====================================
+     * Người đăng reel này
+     * =====================================
+     */
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    User user;
+
+    /**
+     * =====================================
+     * Quan hệ phụ thuộc
+     * =====================================
+     */
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelLike> likes = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelSave> saves = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelView> views = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelComment> comments = new ArrayList<>();
+
+
+    /**
+     * =====================================
+     * Constructor
+     * =====================================
+     */
     public Reel(String videoUrl, String caption, List<String> hashtags) {
         this.videoUrl = videoUrl;
         this.caption = caption;
         this.hashtags = hashtags != null ? hashtags : new ArrayList<>();
         this.viewCount = 0L;
     }
+
+
 }

@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.dto.response.chat.message.MessageRecalledResponse;
 import me.huynhducphu.ping_me.dto.ws.chat.*;
 import me.huynhducphu.ping_me.service.chat.event.*;
-import me.huynhducphu.ping_me.utils.ChatMapper;
+import me.huynhducphu.ping_me.utils.mapper.ChatMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

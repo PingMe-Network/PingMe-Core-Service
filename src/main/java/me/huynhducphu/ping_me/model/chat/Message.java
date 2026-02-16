@@ -1,9 +1,6 @@
 package me.huynhducphu.ping_me.model.chat;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.huynhducphu.ping_me.model.constant.MessageType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -33,8 +30,8 @@ import java.util.UUID;
 })
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Getter
+@Setter
 public class Message {
 
     @Id

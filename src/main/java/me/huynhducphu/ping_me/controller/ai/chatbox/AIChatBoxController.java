@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
 import me.huynhducphu.ping_me.dto.response.ai.AIChatResponseDTO;
 import me.huynhducphu.ping_me.dto.response.ai.AIChatRoomInformationDTO;
-import me.huynhducphu.ping_me.model.ai.AIChatRoom;
 import me.huynhducphu.ping_me.model.ai.AIMessage;
 import me.huynhducphu.ping_me.service.ai.chatbox.AIChatBoxService;
 import org.springframework.data.domain.Slice;

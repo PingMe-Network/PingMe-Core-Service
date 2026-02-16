@@ -2,30 +2,31 @@ package me.huynhducphu.ping_me.model.reels;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 
 @Entity
 @Table(name = "reel_search_histories")
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class ReelSearchHistory extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
     @Column(columnDefinition = "TEXT", nullable = false)
-    private String query;
+    String query;
 
-    // Optional: number of results returned for this search
-    private Integer resultCount;
+    Integer resultCount;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    User user;
 }
 

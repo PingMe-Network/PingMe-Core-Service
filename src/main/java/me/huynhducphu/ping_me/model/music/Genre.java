@@ -18,8 +18,8 @@ import java.util.Set;
 @Table(name = "genres")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
+@Getter
+@Setter
 @SQLRestriction("is_deleted = false")
 public class Genre extends BaseEntity {
     @Id

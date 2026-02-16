@@ -1,10 +1,7 @@
 package me.huynhducphu.ping_me.model.music;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 import me.huynhducphu.ping_me.model.constant.ArtistRole;
 
@@ -19,8 +16,8 @@ import me.huynhducphu.ping_me.model.constant.ArtistRole;
 @Table(name = "song_artist_role")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
+@Getter
+@Setter
 public class SongArtistRole extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

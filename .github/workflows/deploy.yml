@@ -49,7 +49,7 @@ jobs:
           {
             "AWSEBDockerrunVersion": "1",
             "Image": {
-              "Name": "${{ secrets.DOCKER_USERNAME }}/pingme-backend:latest",
+              "Name": "${{ secrets.DOCKER_USERNAME }}/pingme-core-service:latest",
               "Update": "true"
             },
             "Ports": [
