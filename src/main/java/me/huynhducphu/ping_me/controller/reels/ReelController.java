@@ -197,22 +197,6 @@ public class ReelController {
     }
 
     @Operation(
-            summary = "Cập nhật reel (JSON)",
-            description = "Cập nhật caption / hashtag không upload video"
-    )
-    @PatchMapping(value = "{reelId}", consumes = "application/json")
-    public ResponseEntity<ApiResponse<ReelResponse>> patchReel(
-            @Parameter(description = "ID reel", example = "1", required = true)
-            @PathVariable Long reelId,
-
-            @Parameter(description = "Dữ liệu cập nhật reel", required = true)
-            @RequestBody UpsertReelRequest data
-    ) {
-        var res = reelService.updateReel(reelId, data);
-        return ResponseEntity.ok(new ApiResponse<>(res));
-    }
-
-    @Operation(
             summary = "Xóa reel",
             description = "Xóa reel do user sở hữu"
     )
