@@ -10,7 +10,7 @@ import me.huynhducphu.ping_me.dto.base.PageResponse;
 import me.huynhducphu.ping_me.dto.request.reels.UpsertReelCommentRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelCommentResponse;
 import me.huynhducphu.ping_me.model.constant.ReactionType;
-import me.huynhducphu.ping_me.service.reels.ReelCommentService;
+import me.huynhducphu.ping_me.service.reel.ReelCommentService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.dto.admin.request.user;
+package me.huynhducphu.ping_me.dto.request.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

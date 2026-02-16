@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.model.ai.AIMessage;
 import me.huynhducphu.ping_me.repository.mongodb.ai.AIMessageRepository;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
@@ -73,7 +72,7 @@ public class AIChatHelper {
                     .system(context)
                     .user(u -> {
                         u.text(actualPrompt);
-                        if(files != null) {
+                        if (files != null) {
                             for (MultipartFile file : files) {
                                 try {
                                     u.media(

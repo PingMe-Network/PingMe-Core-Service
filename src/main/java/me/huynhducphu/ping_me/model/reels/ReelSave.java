@@ -2,6 +2,7 @@ package me.huynhducphu.ping_me.model.reels;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 
@@ -14,20 +15,20 @@ import me.huynhducphu.ping_me.model.common.BaseEntity;
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReelSave extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reel_id", nullable = false)
-    private Reel reel;
+    Reel reel;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    User user;
 
     public ReelSave(Reel reel, User user) {
         this.reel = reel;

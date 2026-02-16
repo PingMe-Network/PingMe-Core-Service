@@ -1,13 +1,30 @@
-package me.huynhducphu.ping_me.service.reels;
+package me.huynhducphu.ping_me.service.reel;
 
-import me.huynhducphu.ping_me.dto.request.reels.ReelRequest;
+import me.huynhducphu.ping_me.dto.request.reels.UpsertReelRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ReelService {
-    ReelResponse createReel(ReelRequest dto, MultipartFile video);
+
+    /**
+     * =====================================
+     * TẠO - CẬP NHẬT - XÓA REEL
+     * =====================================
+     */
+
+    ReelResponse createReel(UpsertReelRequest upsertReelRequest, MultipartFile video);
+
+    ReelResponse updateReel(Long reelId, UpsertReelRequest upsertReelRequest);
+
+    void deleteReel(Long id);
+
+    /**
+     * =====================================
+     * LẤY REEL
+     * =====================================
+     */
 
     Page<ReelResponse> getFeed(Pageable pageable);
 
@@ -17,9 +34,6 @@ public interface ReelService {
 
     ReelResponse toggleSave(Long reelId);
 
-    void deleteReel(Long id);
-
-    ReelResponse updateReel(Long reelId, ReelRequest dto, MultipartFile video);
 
     // List reels liked by the current user
     Page<ReelResponse> getLikedReels(Pageable pageable);

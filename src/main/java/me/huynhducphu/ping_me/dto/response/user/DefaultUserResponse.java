@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.dto.admin.response.user;
+package me.huynhducphu.ping_me.dto.response.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

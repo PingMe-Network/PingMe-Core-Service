@@ -2,8 +2,12 @@ package me.huynhducphu.ping_me.model.reels;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "reel_comments")
@@ -11,33 +15,34 @@ import me.huynhducphu.ping_me.model.common.BaseEntity;
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class ReelComment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
     @Column(nullable = false, length = 500)
-    private String content;
+    String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reel_id", nullable = false)
-    private Reel reel;
+    Reel reel;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
-    private ReelComment parent;
+    ReelComment parent;
 
     @Column(nullable = false)
-    private Boolean isPinned = false;
+    Boolean isPinned = false;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<ReelComment> replies = new java.util.ArrayList<>();
+    List<ReelComment> replies = new ArrayList<>();
 
     public ReelComment(String content, Reel reel, User user) {
         this.content = content;

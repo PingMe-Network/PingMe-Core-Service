@@ -1,18 +1,18 @@
-package me.huynhducphu.ping_me.service.admin.impl;
+package me.huynhducphu.ping_me.service.user.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import me.huynhducphu.ping_me.dto.admin.request.user.CreateUserRequest;
-import me.huynhducphu.ping_me.dto.admin.request.user.UpdateAccountStatusRequest;
-import me.huynhducphu.ping_me.dto.admin.response.user.DefaultUserResponse;
+import me.huynhducphu.ping_me.dto.request.user.CreateUserRequest;
+import me.huynhducphu.ping_me.dto.request.user.UpdateAccountStatusRequest;
+import me.huynhducphu.ping_me.dto.response.user.DefaultUserResponse;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.model.constant.AuthProvider;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
-import me.huynhducphu.ping_me.service.admin.UserManagementService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
+import me.huynhducphu.ping_me.service.user.UserManagementService;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;

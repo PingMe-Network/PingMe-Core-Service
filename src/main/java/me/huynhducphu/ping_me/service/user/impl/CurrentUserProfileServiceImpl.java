@@ -1,11 +1,11 @@
-package me.huynhducphu.ping_me.service.user.current_user;
+package me.huynhducphu.ping_me.service.user.impl;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import me.huynhducphu.ping_me.dto.request.authentication.ChangePasswordRequest;
-import me.huynhducphu.ping_me.dto.request.authentication.ChangeProfileRequest;
-import me.huynhducphu.ping_me.dto.request.authentication.CreateNewPasswordRequest;
+import me.huynhducphu.ping_me.dto.request.user.ChangePasswordRequest;
+import me.huynhducphu.ping_me.dto.request.user.ChangeProfileRequest;
+import me.huynhducphu.ping_me.dto.request.user.CreateNewPasswordRequest;
 import me.huynhducphu.ping_me.dto.response.authentication.ActiveAccountResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CreateNewPasswordResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserProfileResponse;

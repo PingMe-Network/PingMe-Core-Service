@@ -3,6 +3,7 @@ package me.huynhducphu.ping_me.model.reels;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 import me.huynhducphu.ping_me.model.constant.ReactionType;
@@ -16,24 +17,25 @@ import me.huynhducphu.ping_me.model.constant.ReactionType;
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class ReelCommentReaction extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id", nullable = false)
-    private ReelComment comment;
+    ReelComment comment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ReactionType type;
+    ReactionType type;
 
     public ReelCommentReaction(ReelComment c, User u, ReactionType t) {
         this.comment = c;
