@@ -7,7 +7,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ReelService {
-    ReelResponse createReel(UpsertReelRequest dto, MultipartFile video);
+
+    /**
+     * =====================================
+     * TẠO - CẬP NHẬT - XÓA REEL
+     * =====================================
+     */
+
+    ReelResponse createReel(UpsertReelRequest upsertReelRequest, MultipartFile video);
+
+    ReelResponse updateReel(Long reelId, UpsertReelRequest upsertReelRequest);
+
+    void deleteReel(Long id);
+
+    /**
+     * =====================================
+     * LẤY REEL
+     * =====================================
+     */
 
     Page<ReelResponse> getFeed(Pageable pageable);
 
@@ -17,9 +34,6 @@ public interface ReelService {
 
     ReelResponse toggleSave(Long reelId);
 
-    void deleteReel(Long id);
-
-    ReelResponse updateReel(Long reelId, UpsertReelRequest dto);
 
     // List reels liked by the current user
     Page<ReelResponse> getLikedReels(Pageable pageable);

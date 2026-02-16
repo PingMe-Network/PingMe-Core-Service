@@ -2,6 +2,7 @@ package me.huynhducphu.ping_me.service.reel.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -70,7 +71,7 @@ public class ReelServiceImpl implements ReelService {
      */
 
     @Override
-    public ReelResponse createReel(UpsertReelRequest dto, MultipartFile video) {
+    public ReelResponse createReel(UpsertReelRequest upsertReelRequest, MultipartFile video) {
         var user = currentUserProvider.get();
 
         String ext = getFileExtension(video);
@@ -82,9 +83,9 @@ public class ReelServiceImpl implements ReelService {
                 video, reelsFolder, randomFileName, true, maxBytes
         );
 
-        List<String> normalized = normalizeHashtags(dto.getHashtags());
+        List<String> normalized = normalizeHashtags(upsertReelRequest.getHashtags());
 
-        var reel = new Reel(url, dto.getCaption(), normalized);
+        var reel = new Reel(url, upsertReelRequest.getCaption(), normalized);
         reel.setUser(user);
 
         var saved = reelRepository.saveAndFlush(reel);
@@ -93,7 +94,7 @@ public class ReelServiceImpl implements ReelService {
 
 
     @Override
-    public ReelResponse updateReel(Long reelId, UpsertReelRequest dto) {
+    public ReelResponse updateReel(Long reelId, UpsertReelRequest upsertReelRequest) {
         var user = currentUserProvider.get();
 
         var reel = reelRepository.findById(reelId)
@@ -103,11 +104,11 @@ public class ReelServiceImpl implements ReelService {
             throw new AccessDeniedException("Bạn không có quyền cập nhật Reel này");
 
 
-        if (dto.getCaption() != null)
-            reel.setCaption(dto.getCaption());
+        if (upsertReelRequest.getCaption() != null)
+            reel.setCaption(upsertReelRequest.getCaption());
 
 
-        List<String> normalized = normalizeHashtags(dto.getHashtags());
+        List<String> normalized = normalizeHashtags(upsertReelRequest.getHashtags());
         reel.setHashtags(normalized);
 
 
@@ -139,7 +140,7 @@ public class ReelServiceImpl implements ReelService {
      */
 
     @Override
-    public Page<ReelResponse> getFeed(Pageable pageable) {
+    public Page<@NonNull ReelResponse> getFeed(Pageable pageable) {
         var me = currentUserProvider.get();
 
         return reelRepository.findAllByOrderByCreatedAtDesc(pageable)
@@ -147,7 +148,7 @@ public class ReelServiceImpl implements ReelService {
     }
 
     @Override
-    public Page<ReelResponse> searchByTitle(String query, Pageable pageable) {
+    public Page<@NonNull ReelResponse> searchByTitle(String query, Pageable pageable) {
         var me = currentUserProvider.get();
         if (query == null || query.isBlank()) {
             return getFeed(pageable);
@@ -174,7 +175,7 @@ public class ReelServiceImpl implements ReelService {
     }
 
     @Override
-    public Page<ReelResponse> getLikedReels(Pageable pageable) {
+    public Page<@NonNull ReelResponse> getLikedReels(Pageable pageable) {
         var me = currentUserProvider.get();
         return reelLikeRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
                 .map(ReelLike::getReel)
@@ -182,14 +183,14 @@ public class ReelServiceImpl implements ReelService {
     }
 
     @Override
-    public Page<ReelResponse> getMyCreatedReels(Pageable pageable) {
+    public Page<@NonNull ReelResponse> getMyCreatedReels(Pageable pageable) {
         var me = currentUserProvider.get();
         return reelRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
                 .map(reel -> toReelResponse(reel, me.getId()));
     }
 
     @Override
-    public Page<ReelResponse> getSavedReels(Pageable pageable) {
+    public Page<@NonNull ReelResponse> getSavedReels(Pageable pageable) {
         var me = currentUserProvider.get();
         return reelSaveRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
                 .map(ReelSave::getReel)
@@ -197,7 +198,7 @@ public class ReelServiceImpl implements ReelService {
     }
 
     @Override
-    public Page<ReelResponse> getViewedReels(Pageable pageable) {
+    public Page<@NonNull ReelResponse> getViewedReels(Pageable pageable) {
         var me = currentUserProvider.get();
         return reelViewRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
                 .map(ReelView::getReel)
