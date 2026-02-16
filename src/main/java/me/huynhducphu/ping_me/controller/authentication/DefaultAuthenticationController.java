@@ -8,7 +8,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.base.ApiResponse;
-import me.huynhducphu.ping_me.dto.request.authentication.CreateNewPasswordRequest;
+import me.huynhducphu.ping_me.dto.request.user.CreateNewPasswordRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.LoginRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.RegisterRequest;
 import me.huynhducphu.ping_me.dto.request.authentication.SubmitSessionMetaRequest;

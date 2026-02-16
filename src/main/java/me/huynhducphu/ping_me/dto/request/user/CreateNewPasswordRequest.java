@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.dto.request.authentication;
+package me.huynhducphu.ping_me.dto.request.user;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
