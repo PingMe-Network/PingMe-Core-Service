@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.config.websocket.auth.UserSocketPrincipal;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
 import me.huynhducphu.ping_me.model.User;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +17,16 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class UserMapper {
 
-    private final ModelMapper modelMapper;
 
     public CurrentUserSessionResponse mapToCurrentUserSessionResponse(User user) {
-        var res = modelMapper.map(user, CurrentUserSessionResponse.class);
+        var res = new CurrentUserSessionResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getAvatarUrl(),
+                user.getUpdatedAt().toString(),
+                null
+        );
 
         var roleName = user.getRole() != null ? user.getRole().getName() : "";
         res.setRoleName(roleName);

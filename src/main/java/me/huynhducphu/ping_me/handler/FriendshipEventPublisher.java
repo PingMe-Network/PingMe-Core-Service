@@ -7,7 +7,6 @@ import me.huynhducphu.ping_me.dto.ws.friendship.common.FriendshipEventType;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.chat.Friendship;
 import me.huynhducphu.ping_me.service.friendship.event.*;
-import org.modelmapper.ModelMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -21,8 +20,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class FriendshipEventPublisher {
 
     private final SimpMessagingTemplate messagingTemplate;
-
-    private final ModelMapper modelMapper;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendshipInvited(FriendshipInvitedEvent event) {
@@ -74,7 +71,14 @@ public class FriendshipEventPublisher {
                 ? friendship.getUserB()
                 : friendship.getUserA();
 
-        var userSummaryResponse = modelMapper.map(user, UserSummaryResponse.class);
+        var userSummaryResponse = new UserSummaryResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getAvatarUrl(),
+                user.getStatus(),
+                null
+        );
         userSummaryResponse.setFriendshipSummary(new UserSummaryResponse.FriendshipSummary(
                 friendship.getId(),
                 friendship.getFriendshipStatus()
