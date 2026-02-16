@@ -24,23 +24,33 @@ public class Reel extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    /**
+     * =====================================
+     * Nội dung chính
+     * =====================================
+     */
+
     @Column(nullable = false)
     String videoUrl;
 
     @Column(length = 200)
     String caption;
 
+    @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "reel_hashtags", joinColumns = @JoinColumn(name = "reel_id"))
     @Column(name = "tag", length = 100)
     List<String> hashtags = new ArrayList<>();
 
+    /**
+     * =====================================
+     * Trạng thái & Số liệu thống kê
+     * =====================================
+     */
+
+    @Builder.Default
     @Column(nullable = false)
     Long viewCount = 0L;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -49,16 +59,50 @@ public class Reel extends BaseEntity {
     @Column(length = 500)
     String adminNote;
 
-    public Reel(String videoUrl, String caption) {
-        this.videoUrl = videoUrl;
-        this.caption = caption;
-        this.viewCount = 0L;
-    }
+    /**
+     * =====================================
+     * Người đăng reel này
+     * =====================================
+     */
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    User user;
+
+    /**
+     * =====================================
+     * Quan hệ phụ thuộc
+     * =====================================
+     */
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelLike> likes = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelSave> saves = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelView> views = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<ReelComment> comments = new ArrayList<>();
+
+
+    /**
+     * =====================================
+     * Constructor
+     * =====================================
+     */
     public Reel(String videoUrl, String caption, List<String> hashtags) {
         this.videoUrl = videoUrl;
         this.caption = caption;
         this.hashtags = hashtags != null ? hashtags : new ArrayList<>();
         this.viewCount = 0L;
     }
+
+
 }

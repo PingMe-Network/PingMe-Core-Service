@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,7 +51,6 @@ public class ReelServiceImpl implements ReelService {
     ReelSaveRepository reelSaveRepository;
     ReelViewRepository reelViewRepository;
     ReelCommentRepository reelCommentRepository;
-    ReelCommentReactionRepository reactionRepository;
 
     // Provider
     CurrentUserProvider currentUserProvider;
@@ -61,6 +61,12 @@ public class ReelServiceImpl implements ReelService {
 
     // Mapper
     ModelMapper modelMapper;
+
+    /**
+     * =====================================
+     * TẠO - CẬP NHẬT - XÓA REEL
+     * =====================================
+     */
 
     @Override
     public ReelResponse createReel(ReelRequest dto, MultipartFile video) {
@@ -85,17 +91,7 @@ public class ReelServiceImpl implements ReelService {
                 video, reelsFolder, randomFileName, true, maxBytes
         );
 
-        // normalize hashtags list: remove leading '#', trim, filter empties
-        List<String> normalized = null;
-        if (dto.getHashtags() != null) {
-            normalized = dto.getHashtags().stream()
-                    .filter(h -> h != null && !h.isBlank())
-                    .map(String::trim)
-                    .map(h -> h.startsWith("#") ? h.substring(1) : h)
-                    .map(String::toLowerCase)
-                    .distinct()
-                    .collect(Collectors.toList());
-        }
+        List<String> normalized = normalizeHashtags(dto.getHashtags());
 
         var reel = new Reel(url, dto.getCaption(), normalized);
         reel.setUser(user);
@@ -103,6 +99,81 @@ public class ReelServiceImpl implements ReelService {
         var saved = reelRepository.saveAndFlush(reel);
         return toReelResponse(saved, user.getId());
     }
+
+    @Override
+    public ReelResponse updateReel(Long reelId, ReelRequest dto, MultipartFile video) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository.findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        if (!reel.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Bạn không có quyền cập nhật Reel này");
+        }
+
+        if (dto.getCaption() != null) {
+            reel.setCaption(dto.getCaption());
+        }
+
+        List<String> normalized = normalizeHashtags(dto.getHashtags());
+        reel.setHashtags(normalized);
+
+        if (video != null && !video.isEmpty()) {
+            String contentType = video.getContentType();
+            if (contentType == null || !contentType.startsWith("video/")) {
+                throw new IllegalArgumentException("File upload phải là video");
+            }
+
+            // xóa video cũ trước
+            if (reel.getVideoUrl() != null) {
+                s3Service.deleteFileByUrl(reel.getVideoUrl());
+            }
+
+            String original = video.getOriginalFilename();
+            String ext = (original != null && original.contains("."))
+                    ? original.substring(original.lastIndexOf("."))
+                    : ".mp4";
+
+            String randomFileName = UUID.randomUUID() + ext;
+            long maxBytes = maxReelVideoSize.toBytes();
+
+            String url = s3Service.uploadFile(
+                    video,
+                    reelsFolder,
+                    randomFileName,
+                    true,
+                    maxBytes
+            );
+
+            reel.setVideoUrl(url);
+        }
+
+        var saved = reelRepository.save(reel);
+        return toReelResponse(saved, user.getId());
+    }
+
+    @Override
+    public void deleteReel(Long id) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository
+                .findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        if (!reel.getUser().getId().equals(user.getId()))
+            throw new AccessDeniedException("Bạn không có quyền xóa Reel này");
+
+        if (reel.getVideoUrl() != null)
+            s3Service.deleteFileByUrl(reel.getVideoUrl());
+
+        reelRepository.delete(reel);
+    }
+
+    /**
+     * =====================================
+     * LẤY REEL
+     * =====================================
+     */
 
     @Override
     public Page<ReelResponse> getFeed(Pageable pageable) {
@@ -225,30 +296,11 @@ public class ReelServiceImpl implements ReelService {
         return toReelResponse(reel, me.getId());
     }
 
-    @Override
-    public void deleteReel(Long id) {
-        var user = currentUserProvider.get();
-
-        var reel = reelRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
-
-        if (!reel.getUser().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Bạn không có quyền xóa Reel này");
-        }
-
-        reactionRepository.deleteAllByCommentReelId(id);
-        reelCommentRepository.deleteAllByReelId(id);
-        reelLikeRepository.deleteAllByReelId(id);
-
-        if (reel.getVideoUrl() != null) {
-            s3Service.deleteFileByUrl(reel.getVideoUrl());
-        }
-
-        // 5) xóa reel
-        reelRepository.delete(reel);
-    }
-
-
+    /**
+     * =====================================
+     * HÀM PHỤ
+     * =====================================
+     */
     private ReelResponse toReelResponse(Reel reel, Long meId) {
         ReelResponse res = modelMapper.map(reel, ReelResponse.class);
 
@@ -269,64 +321,15 @@ public class ReelServiceImpl implements ReelService {
         return res;
     }
 
-    @Override
-    public ReelResponse updateReel(Long reelId, ReelRequest dto, MultipartFile video) {
-        var user = currentUserProvider.get();
-
-        var reel = reelRepository.findById(reelId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
-
-        if (!reel.getUser().getId().equals(user.getId())) {
-            throw new AccessDeniedException("Bạn không có quyền cập nhật Reel này");
-        }
-
-        if (dto.getCaption() != null) {
-            reel.setCaption(dto.getCaption());
-        }
-
-        if (dto.getHashtags() != null) {
-            List<String> normalized = dto.getHashtags().stream()
-                    .filter(h -> h != null && !h.isBlank())
-                    .map(String::trim)
-                    .map(h -> h.startsWith("#") ? h.substring(1) : h)
-                    .map(String::toLowerCase)
-                    .distinct()
-                    .collect(Collectors.toList());
-            reel.setHashtags(normalized);
-        }
-
-        if (video != null && !video.isEmpty()) {
-            String contentType = video.getContentType();
-            if (contentType == null || !contentType.startsWith("video/")) {
-                throw new IllegalArgumentException("File upload phải là video");
-            }
-
-            // xóa video cũ trước
-            if (reel.getVideoUrl() != null) {
-                s3Service.deleteFileByUrl(reel.getVideoUrl());
-            }
-
-            String original = video.getOriginalFilename();
-            String ext = (original != null && original.contains("."))
-                    ? original.substring(original.lastIndexOf("."))
-                    : ".mp4";
-
-            String randomFileName = UUID.randomUUID() + ext;
-            long maxBytes = maxReelVideoSize.toBytes();
-
-            String url = s3Service.uploadFile(
-                    video,
-                    reelsFolder,
-                    randomFileName,
-                    true,
-                    maxBytes
-            );
-
-            reel.setVideoUrl(url);
-        }
-
-        var saved = reelRepository.save(reel);
-        return toReelResponse(saved, user.getId());
+    private List<String> normalizeHashtags(List<String> rawHashtags) {
+        if (rawHashtags == null) return new ArrayList<>();
+        return rawHashtags.stream()
+                .filter(h -> h != null && !h.isBlank())
+                .map(String::trim)
+                .map(h -> h.startsWith("#") ? h.substring(1) : h)
+                .map(String::toLowerCase)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
 }
