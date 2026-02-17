@@ -14,7 +14,7 @@ import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.config.auth.JwtBuilder;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProfileService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.mapper.UserMapper;

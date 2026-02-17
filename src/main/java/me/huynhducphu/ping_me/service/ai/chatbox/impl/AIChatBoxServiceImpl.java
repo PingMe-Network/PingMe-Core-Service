@@ -11,7 +11,7 @@ import me.huynhducphu.ping_me.model.constant.AIMessageType;
 import me.huynhducphu.ping_me.repository.mongodb.ai.AIChatRoomRepository;
 import me.huynhducphu.ping_me.repository.mongodb.ai.AIMessageRepository;
 import me.huynhducphu.ping_me.service.ai.chatbox.AIChatBoxService;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.AIChatHelper;
 import org.springframework.data.domain.PageRequest;

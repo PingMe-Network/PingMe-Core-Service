@@ -25,7 +25,7 @@ import me.huynhducphu.ping_me.service.chat.MessageService;
 import me.huynhducphu.ping_me.service.chat.event.MessageCreatedEvent;
 import me.huynhducphu.ping_me.service.chat.event.MessageRecalledEvent;
 import me.huynhducphu.ping_me.service.chat.event.RoomUpdatedEvent;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.service.weather.WeatherService;
 import me.huynhducphu.ping_me.utils.mapper.ChatMapper;

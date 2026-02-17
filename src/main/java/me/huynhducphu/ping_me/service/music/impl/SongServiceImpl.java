@@ -15,7 +15,7 @@ import me.huynhducphu.ping_me.model.music.*;
 import me.huynhducphu.ping_me.repository.jpa.music.*;
 import me.huynhducphu.ping_me.service.music.SongService;
 import me.huynhducphu.ping_me.service.music.util.AudioUtil;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;

@@ -10,7 +10,7 @@ import me.huynhducphu.ping_me.model.constant.ReelStatus;
 import me.huynhducphu.ping_me.model.reels.Reel;
 import me.huynhducphu.ping_me.repository.jpa.reels.*;
 import me.huynhducphu.ping_me.repository.jpa.reels.spec.ReelSpecifications;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
