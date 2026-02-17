@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.integration.redis;
+package me.huynhducphu.ping_me.config.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;

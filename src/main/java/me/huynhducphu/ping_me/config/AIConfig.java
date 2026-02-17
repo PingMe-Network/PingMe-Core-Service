@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.integration;
+package me.huynhducphu.ping_me.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.common;
+package me.huynhducphu.ping_me.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

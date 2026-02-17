@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.integration;
+package me.huynhducphu.ping_me.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

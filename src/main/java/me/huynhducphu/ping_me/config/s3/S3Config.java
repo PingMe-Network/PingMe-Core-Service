@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.integration;
+package me.huynhducphu.ping_me.config.s3;
 
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;

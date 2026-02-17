@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.integration.redis;
+package me.huynhducphu.ping_me.config.redis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
