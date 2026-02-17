@@ -1,8 +1,6 @@
-package me.huynhducphu.ping_me.service.chat.event;
+package me.huynhducphu.ping_me.service.chat.event.message;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Admin 11/3/2025
@@ -10,7 +8,8 @@ import lombok.NoArgsConstructor;
  **/
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 public class MessageRecalledEvent {
 
     private String messageId;

@@ -1,8 +1,6 @@
-package me.huynhducphu.ping_me.service.chat.event;
+package me.huynhducphu.ping_me.service.chat.event.room;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.huynhducphu.ping_me.model.chat.Room;
 import me.huynhducphu.ping_me.model.chat.RoomParticipant;
 
@@ -14,7 +12,8 @@ import java.util.List;
  **/
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 public class RoomCreatedEvent {
 
     private Room room;

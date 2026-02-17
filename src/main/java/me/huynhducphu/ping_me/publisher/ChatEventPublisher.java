@@ -10,7 +10,9 @@ import me.huynhducphu.ping_me.dto.ws.chat.message.MessageCreatedEventPayload;
 import me.huynhducphu.ping_me.dto.ws.chat.message.MessageRecalledEventPayload;
 import me.huynhducphu.ping_me.dto.ws.chat.message.MessageTypingEventPayload;
 import me.huynhducphu.ping_me.dto.ws.chat.room.*;
-import me.huynhducphu.ping_me.service.chat.event.*;
+import me.huynhducphu.ping_me.service.chat.event.message.MessageCreatedEvent;
+import me.huynhducphu.ping_me.service.chat.event.message.MessageRecalledEvent;
+import me.huynhducphu.ping_me.service.chat.event.room.*;
 import me.huynhducphu.ping_me.utils.mapper.ChatMapper;
 import me.huynhducphu.ping_me.utils.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -106,7 +108,7 @@ public class ChatEventPublisher {
         redisWsSyncTemplate.convertAndSend("pingme-ws-sync", wrapper);
     }
 
-    record MessageTypingEvent(boolean isTyping) {
+    public record MessageTypingEvent(boolean isTyping) {
     }
 
     /* ========================================================================== */
