@@ -1,12 +1,14 @@
 package me.huynhducphu.ping_me.dto.response.reels;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 @Builder
 public class ReelResponse {
     private Long id;
