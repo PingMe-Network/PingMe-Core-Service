@@ -107,6 +107,29 @@ public class RedisTemplateConfig {
         return tpl;
     }
 
+    // =========================================================
+    // RedisTemplate dành riêng cho đồng bộ WebSocket (Pub/Sub)
+    // =========================================================
+    @Bean(name = "redisWsSyncTemplate")
+    public RedisTemplate<String, Object> redisWsSyncTemplate(
+            RedisConnectionFactory cf,
+            ObjectMapper om
+    ) {
+        RedisTemplate<String, Object> tpl = new RedisTemplate<>();
+        tpl.setConnectionFactory(cf);
+
+        var keySer = new StringRedisSerializer();
+        var valSer = new GenericJacksonJsonRedisSerializer(om);
+
+        tpl.setKeySerializer(keySer);
+        tpl.setHashKeySerializer(keySer);
+        tpl.setValueSerializer(valSer);
+        tpl.setHashValueSerializer(valSer);
+
+        tpl.afterPropertiesSet();
+        return tpl;
+    }
+
     // =====================================================================
     // 3. Cấu hình Spring Cache (Default Config)
     // =====================================================================
