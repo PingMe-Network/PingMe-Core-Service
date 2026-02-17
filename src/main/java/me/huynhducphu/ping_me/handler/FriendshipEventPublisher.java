@@ -1,69 +1,65 @@
 package me.huynhducphu.ping_me.handler;
 
-import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.response.user.UserSummaryResponse;
+import me.huynhducphu.ping_me.dto.ws.WsBroadcastWrapper;
 import me.huynhducphu.ping_me.dto.ws.friendship.FriendshipEventPayload;
 import me.huynhducphu.ping_me.dto.ws.friendship.common.FriendshipEventType;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.chat.Friendship;
 import me.huynhducphu.ping_me.service.friendship.event.*;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-/**
- * Admin 8/21/2025
- **/
 @Component
-@RequiredArgsConstructor
 public class FriendshipEventPublisher {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RedisTemplate<String, Object> redisWsSyncTemplate;
+
+    public FriendshipEventPublisher(
+            @Qualifier("redisWsSyncTemplate") RedisTemplate<String, Object> redisWsSyncTemplate
+    ) {
+        this.redisWsSyncTemplate = redisWsSyncTemplate;
+    }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendshipInvited(FriendshipInvitedEvent event) {
         var friendship = event.getFriendship();
 
-        messagingTemplate.convertAndSendToUser(
-                friendship.getUserA().getId().toString(),
-                "/queue/friendship",
-                buildPayload(FriendshipEventType.INVITED, friendship, friendship.getUserA().getId())
-        );
-
-        messagingTemplate.convertAndSendToUser(
-                friendship.getUserB().getId().toString(),
-                "/queue/friendship",
-                buildPayload(FriendshipEventType.INVITED, friendship, friendship.getUserB().getId())
-        );
+        // Gửi thông báo cho cả người gửi và người nhận lời mời
+        sendViaRedis(friendship.getUserA().getId(), FriendshipEventType.INVITED, friendship);
+        sendViaRedis(friendship.getUserB().getId(), FriendshipEventType.INVITED, friendship);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendshipAccepted(FriendshipAcceptedEvent event) {
-        publishForTarget(FriendshipEventType.ACCEPTED, event.getFriendship(), event.getTargetId());
+        sendViaRedis(event.getTargetId(), FriendshipEventType.ACCEPTED, event.getFriendship());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendshipRejected(FriendshipRejectedEvent event) {
-        publishForTarget(FriendshipEventType.REJECTED, event.getFriendship(), event.getTargetId());
+        sendViaRedis(event.getTargetId(), FriendshipEventType.REJECTED, event.getFriendship());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendshipCanceled(FriendshipCanceledEvent event) {
-        publishForTarget(FriendshipEventType.CANCELED, event.getFriendship(), event.getTargetId());
+        sendViaRedis(event.getTargetId(), FriendshipEventType.CANCELED, event.getFriendship());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendshipDeleted(FriendshipDeletedEvent event) {
-        publishForTarget(FriendshipEventType.DELETED, event.getFriendship(), event.getTargetId());
+        sendViaRedis(event.getTargetId(), FriendshipEventType.DELETED, event.getFriendship());
     }
+    
+    private void sendViaRedis(Long targetId, FriendshipEventType type, Friendship friendship) {
+        var payload = buildPayload(type, friendship, targetId);
 
-    private void publishForTarget(FriendshipEventType type, Friendship friendship, Long targetId) {
-        messagingTemplate.convertAndSendToUser(
-                targetId.toString(),
-                "/queue/friendship",
-                buildPayload(type, friendship, targetId)
-        );
+        String destination = "/user/" + targetId + "/queue/friendship";
+
+        var wrapper = new WsBroadcastWrapper(destination, payload);
+        redisWsSyncTemplate.convertAndSend("pingme-ws-sync", wrapper);
     }
 
     private FriendshipEventPayload buildPayload(FriendshipEventType type, Friendship friendship, Long targetId) {
@@ -86,5 +82,4 @@ public class FriendshipEventPublisher {
 
         return new FriendshipEventPayload(type, userSummaryResponse);
     }
-
 }
