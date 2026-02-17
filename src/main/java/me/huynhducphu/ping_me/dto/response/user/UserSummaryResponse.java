@@ -23,7 +23,9 @@ public class UserSummaryResponse {
 
     @AllArgsConstructor
     @NoArgsConstructor
-    @Data
+    @Getter
+    @Setter
+    @Builder
     public static class FriendshipSummary {
         private Long id;
         private FriendshipStatus friendshipStatus;

@@ -1,7 +1,9 @@
 package me.huynhducphu.ping_me.service.friendship.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.friendship.FriendInvitationRequest;
 import me.huynhducphu.ping_me.dto.response.friendship.HistoryFriendshipResponse;
 import me.huynhducphu.ping_me.dto.response.friendship.UserFriendshipStatsResponse;
@@ -11,9 +13,9 @@ import me.huynhducphu.ping_me.model.chat.Friendship;
 import me.huynhducphu.ping_me.model.constant.FriendshipStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.repository.jpa.chat.FriendshipRepository;
+import me.huynhducphu.ping_me.service.friendship.FriendshipService;
 import me.huynhducphu.ping_me.service.friendship.event.*;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
-import org.modelmapper.ModelMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -30,16 +32,18 @@ import java.util.List;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.friendship.FriendshipService {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class FriendshipServiceImpl implements FriendshipService {
 
-    private final UserRepository userRepository;
-    private final FriendshipRepository friendshipRepository;
+    // Repository
+    UserRepository userRepository;
+    FriendshipRepository friendshipRepository;
 
-    private final CurrentUserProvider currentUserProvider;
+    // Provider
+    CurrentUserProvider currentUserProvider;
 
-    private final ModelMapper modelMapper;
-
-    private final ApplicationEventPublisher eventPublisher;
+    // Publister
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     public void sendInvitation(FriendInvitationRequest friendInvitationRequest) {
@@ -329,8 +333,19 @@ public class FriendshipServiceImpl implements me.huynhducphu.ping_me.service.fri
     // Utilities methods
     // =====================================
     private UserSummaryResponse mapToDto(User user, Friendship friendship) {
-        var userSummaryResponse = modelMapper.map(user, UserSummaryResponse.class);
-        var friendshipSummary = modelMapper.map(friendship, UserSummaryResponse.FriendshipSummary.class);
+        var userSummaryResponse = UserSummaryResponse
+                .builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .status(user.getStatus())
+                .build();
+
+        var friendshipSummary = UserSummaryResponse.FriendshipSummary
+                .builder()
+                .id(friendship.getId())
+                .friendshipStatus(friendship.getFriendshipStatus())
+                .build();
         userSummaryResponse.setFriendshipSummary(friendshipSummary);
 
         return userSummaryResponse;
