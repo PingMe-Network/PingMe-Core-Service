@@ -4,8 +4,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserDeviceMetaResponse;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
-import me.huynhducphu.ping_me.service.authentication.JwtService;
 import me.huynhducphu.ping_me.service.authentication.RefreshTokenRedisService;
+import me.huynhducphu.ping_me.config.auth.JwtBuilder;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.service.user.CurrentUserSessionService;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,7 +23,7 @@ import java.util.List;
 @Transactional
 public class CurrentUserSessionServiceImpl implements CurrentUserSessionService {
 
-    private final JwtService jwtService;
+    private final JwtBuilder jwtService;
     private final RefreshTokenRedisService refreshTokenRedisService;
 
 

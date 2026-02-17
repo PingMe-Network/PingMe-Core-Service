@@ -13,7 +13,7 @@ import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResp
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
-import me.huynhducphu.ping_me.service.authentication.JwtService;
+import me.huynhducphu.ping_me.config.auth.JwtBuilder;
 import me.huynhducphu.ping_me.service.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProfileService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
@@ -45,7 +45,8 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
 
     CurrentUserProvider currentUserProvider;
 
-    JwtService jwtService;
+    JwtBuilder jwtService;
+
     static Long MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024L;
 
     @Override

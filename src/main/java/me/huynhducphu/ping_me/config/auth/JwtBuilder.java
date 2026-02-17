@@ -1,11 +1,9 @@
-package me.huynhducphu.ping_me.service.authentication.impl;
+package me.huynhducphu.ping_me.config.auth;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import me.huynhducphu.ping_me.config.auth.AuthConfiguration;
 import me.huynhducphu.ping_me.model.User;
-import me.huynhducphu.ping_me.service.authentication.JwtService;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +16,12 @@ import java.time.temporal.ChronoUnit;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class JwtServiceImpl implements JwtService {
+public class JwtBuilder {
 
     JwtEncoder jwtEncoder;
     JwtDecoder jwtDecoder;
 
 
-    @Override
     public String buildJwt(User user, Long expirationRate) {
         // Lấy thời điểm hiện tại
         Instant now = Instant.now();
@@ -58,7 +55,6 @@ public class JwtServiceImpl implements JwtService {
     }
 
 
-    @Override
     public Jwt decodeJwt(String token) {
         return jwtDecoder.decode(token);
     }
