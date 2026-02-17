@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.handler;
+package me.huynhducphu.ping_me.publisher;
 
 import me.huynhducphu.ping_me.dto.response.user.UserSummaryResponse;
 import me.huynhducphu.ping_me.dto.ws.WsBroadcastWrapper;
@@ -52,7 +52,7 @@ public class FriendshipEventPublisher {
     public void handleFriendshipDeleted(FriendshipDeletedEvent event) {
         sendViaRedis(event.getTargetId(), FriendshipEventType.DELETED, event.getFriendship());
     }
-    
+
     private void sendViaRedis(Long targetId, FriendshipEventType type, Friendship friendship) {
         var payload = buildPayload(type, friendship, targetId);
 

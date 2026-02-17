@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.dto.ws.chat;
+package me.huynhducphu.ping_me.dto.ws.chat.room;
 
 import lombok.Getter;
 import me.huynhducphu.ping_me.dto.response.chat.message.MessageResponse;
@@ -11,23 +11,24 @@ import me.huynhducphu.ping_me.dto.ws.chat.common.ChatEventType;
  *
  **/
 @Getter
-public class RoomMemberRemovedEventPayload extends BaseChatEventPayload {
+public class RoomMemberAddedEventPayload extends BaseChatEventPayload {
 
     private final RoomResponse roomResponse;
     private final Long targetUserId;
     private final Long actorUserId;
     private MessageResponse systemMessage;
 
-    public RoomMemberRemovedEventPayload(
+    public RoomMemberAddedEventPayload(
             RoomResponse dto,
             Long targetUserId,
             Long actorUserId,
             MessageResponse systemMessage
     ) {
-        super(ChatEventType.MEMBER_REMOVED);
+        super(ChatEventType.MEMBER_ADDED);
         this.roomResponse = dto;
         this.targetUserId = targetUserId;
         this.actorUserId = actorUserId;
         this.systemMessage = systemMessage;
     }
+
 }

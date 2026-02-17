@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.dto.ws.chat;
+package me.huynhducphu.ping_me.dto.ws.chat.room;
 
 import lombok.Getter;
 import me.huynhducphu.ping_me.dto.response.chat.message.MessageResponse;
