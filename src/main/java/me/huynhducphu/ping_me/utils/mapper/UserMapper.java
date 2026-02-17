@@ -3,6 +3,7 @@ package me.huynhducphu.ping_me.utils.mapper;
 import lombok.RequiredArgsConstructor;
 import me.huynhducphu.ping_me.config.websocket.auth.UserSocketPrincipal;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
+import me.huynhducphu.ping_me.dto.response.user.DefaultUserResponse;
 import me.huynhducphu.ping_me.model.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -45,6 +46,20 @@ public class UserMapper {
             return (UserSocketPrincipal) principal;
         }
         return null;
+    }
+
+    public DefaultUserResponse mapToDefaultUserResponse(User user) {
+        return DefaultUserResponse
+                .builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .gender(user.getGender())
+                .address(user.getAddress())
+                .dob(user.getDob())
+                .avatarUrl(user.getAvatarUrl())
+                .accountStatus(user.getAccountStatus())
+                .build();
     }
 
 }
