@@ -12,6 +12,7 @@ import me.huynhducphu.ping_me.dto.ws.chat.message.MessageTypingEventPayload;
 import me.huynhducphu.ping_me.dto.ws.chat.room.*;
 import me.huynhducphu.ping_me.service.chat.event.message.MessageCreatedEvent;
 import me.huynhducphu.ping_me.service.chat.event.message.MessageRecalledEvent;
+import me.huynhducphu.ping_me.service.chat.event.message.MessageTypingEvent;
 import me.huynhducphu.ping_me.service.chat.event.room.*;
 import me.huynhducphu.ping_me.utils.mapper.ChatMapper;
 import me.huynhducphu.ping_me.utils.mapper.UserMapper;
@@ -106,9 +107,6 @@ public class ChatEventPublisher {
 
         var wrapper = new me.huynhducphu.ping_me.dto.ws.WsBroadcastWrapper(destination, signal);
         redisWsSyncTemplate.convertAndSend("pingme-ws-sync", wrapper);
-    }
-
-    public record MessageTypingEvent(boolean isTyping) {
     }
 
     /* ========================================================================== */
