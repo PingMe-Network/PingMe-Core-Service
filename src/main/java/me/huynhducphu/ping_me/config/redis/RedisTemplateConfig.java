@@ -129,40 +129,4 @@ public class RedisTemplateConfig {
         tpl.afterPropertiesSet();
         return tpl;
     }
-
-    // =====================================================================
-    // 3. Cấu hình Spring Cache (Default Config)
-    // =====================================================================
-    @Bean
-    public RedisCacheConfiguration cacheConfiguration(ObjectMapper om) {
-        return RedisCacheConfiguration.defaultCacheConfig()
-                .serializeKeysWith(
-                        RedisSerializationContext
-                                .SerializationPair
-                                .fromSerializer(new StringRedisSerializer())
-                )
-                .serializeValuesWith(
-                        RedisSerializationContext
-                                .SerializationPair
-                                .fromSerializer(new GenericJacksonJsonRedisSerializer(om))
-                )
-                .entryTtl(Duration.ofMinutes(15))
-                .disableCachingNullValues();
-    }
-
-    // =====================================================================
-    // 4. Khởi tạo CacheManager
-    // =====================================================================
-    @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory factory, RedisCacheConfiguration baseCfg) {
-        Map<String, RedisCacheConfiguration> configs = new HashMap<>();
-
-        configs.put("role_permissions", baseCfg.entryTtl(Duration.ofHours(2)));
-
-        return RedisCacheManager.builder(factory)
-                .cacheDefaults(baseCfg)
-                .withInitialCacheConfigurations(configs)
-                .transactionAware()
-                .build();
-    }
 }
