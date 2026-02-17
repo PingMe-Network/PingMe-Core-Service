@@ -20,7 +20,6 @@ import me.huynhducphu.ping_me.service.authentication.RefreshTokenRedisService;
 import me.huynhducphu.ping_me.service.authentication.model.AuthResultWrapper;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.mapper.UserMapper;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseCookie;
@@ -49,7 +48,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     JwtService jwtService;
     RefreshTokenRedisService refreshTokenRedisService;
 
-    ModelMapper modelMapper;
     UserMapper userMapper;
 
     UserRepository userRepository;
@@ -77,7 +75,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public CurrentUserSessionResponse register(
             RegisterRequest registerRequest) {
-        var user = modelMapper.map(registerRequest, User.class);
+        var user = User
+                .builder()
+                .email(registerRequest.getEmail())
+                .name(registerRequest.getName())
+                .gender(registerRequest.getGender())
+                .address(registerRequest.getAddress())
+                .dob(registerRequest.getDob())
+                .build();
 
         if (userRepository.existsByEmail(registerRequest.getEmail()))
             throw new DataIntegrityViolationException("Email đã tồn tại");
