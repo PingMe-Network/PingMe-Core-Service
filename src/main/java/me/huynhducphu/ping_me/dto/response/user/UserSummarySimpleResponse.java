@@ -1,8 +1,6 @@
 package me.huynhducphu.ping_me.dto.response.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author Le Tran Gia Huy
@@ -11,9 +9,11 @@ import lombok.NoArgsConstructor;
  * @package me.huynhducphu.PingMe_Backend.dto.response.common
  */
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class UserSummarySimpleResponse {
     private Long id;
     private String name;

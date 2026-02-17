@@ -1,17 +1,17 @@
 package me.huynhducphu.ping_me.dto.response.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.huynhducphu.ping_me.model.constant.FriendshipStatus;
 import me.huynhducphu.ping_me.model.constant.UserStatus;
 
 /**
  * Admin 8/19/2025
  **/
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class UserSummaryResponse {
 
     private Long id;

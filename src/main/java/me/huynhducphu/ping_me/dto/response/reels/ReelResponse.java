@@ -1,11 +1,13 @@
 package me.huynhducphu.ping_me.dto.response.reels;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@Builder
 public class ReelResponse {
     private Long id;
     private String videoUrl;

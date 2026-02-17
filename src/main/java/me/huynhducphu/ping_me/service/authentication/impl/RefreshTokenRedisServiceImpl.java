@@ -27,7 +27,6 @@ import java.util.Set;
 public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
 
     RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate;
-    ModelMapper modelMapper;
 
     public RefreshTokenRedisServiceImpl(
             @Qualifier("redisDeviceMetaTemplate")
@@ -35,7 +34,6 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
             ModelMapper modelMapper
     ) {
         this.redisDeviceMetaTemplate = redisDeviceMetaTemplate;
-        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -72,7 +70,14 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
             String keyHash = key.substring(key.lastIndexOf(":") + 1);
             boolean isCurrent = currentTokenHash.equals(keyHash);
 
-            var sessionMetaResponse = modelMapper.map(meta, CurrentUserDeviceMetaResponse.class);
+            var sessionMetaResponse = CurrentUserDeviceMetaResponse
+                    .builder()
+                    .sessionId(meta.getSessionId())
+                    .deviceType(meta.getDeviceType())
+                    .browser(meta.getBrowser())
+                    .os(meta.getOs())
+                    .lastActiveAt(meta.getLastActiveAt())
+                    .build();
             sessionMetaResponse.setCurrent(isCurrent);
 
             sessionMetas.add(sessionMetaResponse);
