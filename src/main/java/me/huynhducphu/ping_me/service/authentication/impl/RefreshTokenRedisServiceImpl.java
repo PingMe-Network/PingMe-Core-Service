@@ -7,7 +7,6 @@ import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserDeviceMetaR
 import me.huynhducphu.ping_me.model.common.DeviceMeta;
 import me.huynhducphu.ping_me.service.authentication.RefreshTokenRedisService;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -30,8 +29,7 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
 
     public RefreshTokenRedisServiceImpl(
             @Qualifier("redisDeviceMetaTemplate")
-            RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate,
-            ModelMapper modelMapper
+            RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate
     ) {
         this.redisDeviceMetaTemplate = redisDeviceMetaTemplate;
     }
