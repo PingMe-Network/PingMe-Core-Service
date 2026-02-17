@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
  * Admin 8/21/2025
  **/
 @Configuration
-public class SwaggerConfiguration {
+public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()

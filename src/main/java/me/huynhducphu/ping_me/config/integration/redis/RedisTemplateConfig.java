@@ -1,4 +1,4 @@
-package me.huynhducphu.ping_me.config.integration;
+package me.huynhducphu.ping_me.config.integration.redis;
 
 import me.huynhducphu.ping_me.model.common.DeviceMeta;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class RedisConfiguration {
+public class RedisTemplateConfig {
 
     // =========================================================
     // 1RedisTemplate cho caching phiên đăng nhập

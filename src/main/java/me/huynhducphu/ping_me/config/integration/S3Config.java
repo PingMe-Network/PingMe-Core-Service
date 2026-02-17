@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  **/
 @Configuration
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class S3Configuration {
+public class S3Config {
 
     @Value("${aws.access-key}")
     String accessKey;
