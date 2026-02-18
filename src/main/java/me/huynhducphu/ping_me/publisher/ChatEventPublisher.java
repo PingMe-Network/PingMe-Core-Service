@@ -3,29 +3,20 @@ package me.huynhducphu.ping_me.publisher;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import me.huynhducphu.ping_me.config.websocket.auth.UserSocketPrincipal;
 import me.huynhducphu.ping_me.dto.response.chat.message.MessageRecalledResponse;
 import me.huynhducphu.ping_me.dto.ws.WsBroadcastWrapper;
 import me.huynhducphu.ping_me.dto.ws.chat.message.MessageCreatedEventPayload;
 import me.huynhducphu.ping_me.dto.ws.chat.message.MessageRecalledEventPayload;
-import me.huynhducphu.ping_me.dto.ws.chat.message.MessageTypingEventPayload;
 import me.huynhducphu.ping_me.dto.ws.chat.room.*;
 import me.huynhducphu.ping_me.service.chat.event.message.MessageCreatedEvent;
 import me.huynhducphu.ping_me.service.chat.event.message.MessageRecalledEvent;
-import me.huynhducphu.ping_me.service.chat.event.message.MessageTypingEvent;
 import me.huynhducphu.ping_me.service.chat.event.room.*;
 import me.huynhducphu.ping_me.utils.mapper.ChatMapper;
-import me.huynhducphu.ping_me.utils.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.security.Principal;
 
 /**
  * Admin 8/29/2025
@@ -41,17 +32,14 @@ public class ChatEventPublisher {
 
     // Mapper
     ChatMapper chatMapper;
-    UserMapper userMapper;
 
     public ChatEventPublisher(
             @Qualifier(value = "redisWsSyncTemplate")
             RedisTemplate<String, Object> redisWsSyncTemplate,
-            ChatMapper chatMapper,
-            UserMapper userMapper
+            ChatMapper chatMapper
     ) {
         this.redisWsSyncTemplate = redisWsSyncTemplate;
         this.chatMapper = chatMapper;
-        this.userMapper = userMapper;
     }
 
     /* ========================================================================== */
@@ -81,31 +69,6 @@ public class ChatEventPublisher {
         var payload = new MessageRecalledEventPayload(messageRecalledResponse);
 
         var wrapper = new WsBroadcastWrapper(destination, payload);
-        redisWsSyncTemplate.convertAndSend("pingme-ws-sync", wrapper);
-    }
-
-    /* ========================================================================== */
-    /*                           MESSAGE TYPING                                   */
-    /* ========================================================================== */
-    @MessageMapping("/rooms/{roomId}/typing")
-    public void handleTypingSignal(
-            @DestinationVariable Long roomId,
-            @Payload MessageTypingEvent payload,
-            Principal principal
-    ) {
-        UserSocketPrincipal user = userMapper.extractUserPrincipal(principal);
-        if (user == null) return;
-
-        var signal = new MessageTypingEventPayload(
-                roomId,
-                user.getId(),
-                user.getUsername(),
-                payload.isTyping()
-        );
-
-        String destination = "/topic/rooms/" + roomId + "/typing";
-
-        var wrapper = new me.huynhducphu.ping_me.dto.ws.WsBroadcastWrapper(destination, signal);
         redisWsSyncTemplate.convertAndSend("pingme-ws-sync", wrapper);
     }
 
