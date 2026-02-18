@@ -8,7 +8,7 @@ import me.huynhducphu.ping_me.model.music.Artist;
 import me.huynhducphu.ping_me.repository.jpa.music.AlbumRepository;
 import me.huynhducphu.ping_me.repository.jpa.music.ArtistRepository;
 import me.huynhducphu.ping_me.service.music.AlbumService;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,8 +28,8 @@ public class AlbumServiceImpl implements AlbumService {
 
     @Override
     public Page<AlbumResponse> getAllAlbums(Pageable pageable) {
-         Page<Album> albumPage = albumRepository.findAll(pageable);
-         return albumPage.map(this::mapToResponse);
+        Page<Album> albumPage = albumRepository.findAll(pageable);
+        return albumPage.map(this::mapToResponse);
     }
 
     @Override

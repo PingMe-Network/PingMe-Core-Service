@@ -14,7 +14,7 @@ import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.model.constant.OtpType;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
-import me.huynhducphu.ping_me.service.authentication.JwtService;
+import me.huynhducphu.ping_me.config.auth.JwtBuilder;
 import me.huynhducphu.ping_me.service.mail.OtpService;
 import me.huynhducphu.ping_me.service.redis.RedisService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
@@ -32,7 +32,7 @@ public class OtpServiceImpl implements OtpService {
 
     // Service
     RedisService redisService;
-    JwtService jwtService;
+    JwtBuilder jwtService;
 
     MailAsyncService mailAsyncService;
 
@@ -59,9 +59,9 @@ public class OtpServiceImpl implements OtpService {
         String otp = OtpGenerator.generateOtp(6);
 
         User user = userRepository.findByEmail(email);
-        if(user == null) throw new EntityNotFoundException("User not found with email: " + email);
+        if (user == null) throw new EntityNotFoundException("User not found with email: " + email);
 
-        if(request.getOtpType() != OtpType.ACCOUNT_ACTIVATION &&
+        if (request.getOtpType() != OtpType.ACCOUNT_ACTIVATION &&
                 user.getAccountStatus() == AccountStatus.NON_ACTIVATED)
             throw new IllegalArgumentException("Please active your email to do this action: " + email);
 
@@ -85,7 +85,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResponse verifyOtp(OtpVerificationRequest request) {
         // default otp for testing purpose
-        if(request.getOtp().equalsIgnoreCase(defaultOtp))
+        if (request.getOtp().equalsIgnoreCase(defaultOtp))
             return OtpVerificationResponse.builder()
                     .isValid(true)
                     .resetPasswordToken(executePostVerificationLogic(request.getMailRecipient(), request.getOtpType())

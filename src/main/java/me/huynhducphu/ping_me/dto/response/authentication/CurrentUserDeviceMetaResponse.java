@@ -1,15 +1,15 @@
 package me.huynhducphu.ping_me.dto.response.authentication;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Admin 8/17/2025
  **/
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
+@Builder
 public class CurrentUserDeviceMetaResponse {
 
     private String sessionId;

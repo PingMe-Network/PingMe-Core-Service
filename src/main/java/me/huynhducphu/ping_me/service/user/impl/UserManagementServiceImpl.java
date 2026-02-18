@@ -13,7 +13,8 @@ import me.huynhducphu.ping_me.model.constant.AuthProvider;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.service.user.UserManagementService;
-import org.modelmapper.ModelMapper;
+import me.huynhducphu.ping_me.utils.mapper.UserMapper;
+import org.jspecify.annotations.NonNull;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,38 +33,51 @@ import java.util.Objects;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Transactional
 public class UserManagementServiceImpl implements UserManagementService {
+
+    // Repository
     UserRepository userRepository;
+
+    // Encoder
     PasswordEncoder passwordEncoder;
-    ModelMapper modelMapper;
+
+    // Provider
     CurrentUserProvider currentUserProvider;
+
+    // Mapper
+    UserMapper userMapper;
 
     @Override
     public DefaultUserResponse saveUser(CreateUserRequest createUserRequest) {
         if (userRepository.existsByEmail(createUserRequest.getEmail()))
             throw new DataIntegrityViolationException("Email đã tồn tại");
 
-        var user = modelMapper.map(createUserRequest, User.class);
+        var user = User
+                .builder()
+                .email(createUserRequest.getEmail())
+                .name(createUserRequest.getName())
+                .build();
+
         user.setAuthProvider(AuthProvider.LOCAL);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         var savedUser = userRepository.save(user);
 
-        return modelMapper.map(savedUser, DefaultUserResponse.class);
+        return userMapper.mapToDefaultUserResponse(savedUser);
     }
 
     @Override
-    public Page<DefaultUserResponse> getAllUsers(Pageable pageable, AccountStatus accountStatus) {
+    public Page<@NonNull DefaultUserResponse> getAllUsers(Pageable pageable, AccountStatus accountStatus) {
         if (accountStatus == null)
             return userRepository.findAll(pageable)
-                    .map(user -> modelMapper.map(user, DefaultUserResponse.class));
+                    .map(userMapper::mapToDefaultUserResponse);
         return userRepository.findByAccountStatus(accountStatus, pageable)
-                .map(user -> modelMapper.map(user, DefaultUserResponse.class));
+                .map(userMapper::mapToDefaultUserResponse);
     }
 
     @Override
     public DefaultUserResponse getUserById(Long id) {
         return userRepository
                 .findById(id)
-                .map(user -> modelMapper.map(user, DefaultUserResponse.class))
+                .map(userMapper::mapToDefaultUserResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy người dùng với id này"));
     }
 

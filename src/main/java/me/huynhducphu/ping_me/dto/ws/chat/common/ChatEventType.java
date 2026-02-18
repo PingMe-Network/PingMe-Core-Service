@@ -8,7 +8,9 @@ public enum ChatEventType {
     // Message
     MESSAGE_CREATED,
     MESSAGE_RECALLED,
+    MESSAGE_TYPING,
     READ_STATE_CHANGED,
+
 
     // Room
     ROOM_CREATED,

@@ -13,12 +13,11 @@ import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResp
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
-import me.huynhducphu.ping_me.service.authentication.JwtService;
-import me.huynhducphu.ping_me.service.s3.S3Service;
+import me.huynhducphu.ping_me.config.auth.JwtBuilder;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProfileService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.mapper.UserMapper;
-import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,19 +40,28 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
     S3Service s3Service;
 
     UserMapper userMapper;
-    ModelMapper modelMapper;
 
     UserRepository userRepository;
 
     CurrentUserProvider currentUserProvider;
 
-    JwtService jwtService;
+    JwtBuilder jwtService;
+
     static Long MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024L;
 
     @Override
     public CurrentUserProfileResponse getCurrentUserInfo() {
         var user = currentUserProvider.get();
-        var currentUserProfileResponse = modelMapper.map(user, CurrentUserProfileResponse.class);
+        var currentUserProfileResponse = new CurrentUserProfileResponse(
+                user.getEmail(),
+                user.getName(),
+                user.getAvatarUrl(),
+                user.getGender(),
+                user.getAddress(),
+                user.getDob(),
+                null,
+                user.getAccountStatus()
+        );
 
         String roleName = user.getRole() != null ? user.getRole().getName() : "";
         currentUserProfileResponse.setRoleName(roleName);

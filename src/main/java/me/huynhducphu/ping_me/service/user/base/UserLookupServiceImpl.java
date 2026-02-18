@@ -8,7 +8,6 @@ import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.repository.jpa.chat.FriendshipRepository;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.service.user.UserLookupService;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,8 +21,6 @@ public class UserLookupServiceImpl implements UserLookupService {
     private final FriendshipRepository friendshipRepository;
 
     private final CurrentUserProvider currentUserProvider;
-
-    private final ModelMapper modelMapper;
 
     @Override
     public UserSummaryResponse lookupUser(String email) {
@@ -43,7 +40,14 @@ public class UserLookupServiceImpl implements UserLookupService {
             throw new EntityNotFoundException("Bạn không thể tìm chính mình");
 
         // Chuyển entity sang DTO trả về
-        var userSummaryResponse = modelMapper.map(targetUser, UserSummaryResponse.class);
+        var userSummaryResponse = UserSummaryResponse
+                .builder()
+                .id(targetUser.getId())
+                .email(targetUser.getEmail())
+                .name(targetUser.getName())
+                .avatarUrl(targetUser.getAvatarUrl())
+                .status(targetUser.getStatus())
+                .build();
 
         // ===================================================================================================
         // Kèm theo thông tin quan hệ bạn bè (Friendship) giữa currentUser và targetUser nếu có:
@@ -72,6 +76,11 @@ public class UserLookupServiceImpl implements UserLookupService {
     public UserSummarySimpleResponse lookupUserById(Long userId) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy người dùng với ID: " + userId));
-        return modelMapper.map(user, UserSummarySimpleResponse.class);
+        return UserSummarySimpleResponse
+                .builder()
+                .id(user.getId())
+                .name(user.getName())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
     }
 }

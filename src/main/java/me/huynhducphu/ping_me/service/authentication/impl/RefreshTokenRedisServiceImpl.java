@@ -7,7 +7,6 @@ import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserDeviceMetaR
 import me.huynhducphu.ping_me.model.common.DeviceMeta;
 import me.huynhducphu.ping_me.service.authentication.RefreshTokenRedisService;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -27,15 +26,12 @@ import java.util.Set;
 public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
 
     RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate;
-    ModelMapper modelMapper;
 
     public RefreshTokenRedisServiceImpl(
             @Qualifier("redisDeviceMetaTemplate")
-            RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate,
-            ModelMapper modelMapper
+            RedisTemplate<String, DeviceMeta> redisDeviceMetaTemplate
     ) {
         this.redisDeviceMetaTemplate = redisDeviceMetaTemplate;
-        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -72,7 +68,14 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
             String keyHash = key.substring(key.lastIndexOf(":") + 1);
             boolean isCurrent = currentTokenHash.equals(keyHash);
 
-            var sessionMetaResponse = modelMapper.map(meta, CurrentUserDeviceMetaResponse.class);
+            var sessionMetaResponse = CurrentUserDeviceMetaResponse
+                    .builder()
+                    .sessionId(meta.getSessionId())
+                    .deviceType(meta.getDeviceType())
+                    .browser(meta.getBrowser())
+                    .os(meta.getOs())
+                    .lastActiveAt(meta.getLastActiveAt())
+                    .build();
             sessionMetaResponse.setCurrent(isCurrent);
 
             sessionMetas.add(sessionMetaResponse);
