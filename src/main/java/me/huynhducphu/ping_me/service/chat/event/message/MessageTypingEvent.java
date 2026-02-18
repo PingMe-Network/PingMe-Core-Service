@@ -1,5 +1,6 @@
 package me.huynhducphu.ping_me.service.chat.event.message;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,7 @@ import lombok.Setter;
 @Setter
 public class MessageTypingEvent {
 
+    @JsonProperty("isTyping")
     boolean isTyping;
 
 }
