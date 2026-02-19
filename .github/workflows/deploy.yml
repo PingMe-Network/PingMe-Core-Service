@@ -36,11 +36,12 @@ jobs:
       - name: Build & Push Native Image (Buildpacks)
         if: github.ref == 'refs/heads/main'
         run: |
-          mvn -DskipTests spring-boot:build-image \
+          mvn -Pnative -DskipTests spring-boot:build-image \
             -Dspring-boot.build-image.builder=paketobuildpacks/builder-jammy-java-tiny \
             -Dspring-boot.build-image.imageName=${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native \
             -Dspring-boot.build-image.publish=true \
-            -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE=true
+            -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE=true \
+            -Dspring-boot.build-image.environment.BPE_APPEND_JAVA_TOOL_OPTIONS="-Xmx6g"
 
   deploy:
     name: Deploy
