@@ -58,7 +58,7 @@ public class UserManagementServiceImpl implements UserManagementService {
                 .build();
 
         user.setAuthProvider(AuthProvider.LOCAL);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
         var savedUser = userRepository.save(user);
 
         return userMapper.mapToDefaultUserResponse(savedUser);

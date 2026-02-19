@@ -88,7 +88,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new DataIntegrityViolationException("Email đã tồn tại");
 
         user.setAuthProvider(AuthProvider.LOCAL);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setAccountStatus(AccountStatus.ACTIVE);
         var savedUser = userRepository.save(user);
 
@@ -156,7 +156,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword()))
             throw new IllegalArgumentException("Mật khẩu không đúng");
 
-        if (!user.getRole().getName().equals("ADMIN"))
+        if (user.getRole() == null || !user.getRole().getName().equals("ADMIN"))
             throw new AccessDeniedException("Người dùng không có quyền truy cập");
 
         String accessToken = jwtService.buildJwt(user, 600L);

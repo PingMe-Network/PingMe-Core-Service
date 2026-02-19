@@ -134,8 +134,7 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
 
         if (currentUser == null) throw new NullPointerException("User not found!");
 
-        boolean isMatch = request.getNewPassword()
-                .equalsIgnoreCase(request.getConfirmNewPassword());
+        boolean isMatch = request.getNewPassword().equals(request.getConfirmNewPassword());
         if (!isMatch) throw new IllegalArgumentException("New password and confirm new password do not match!");
 
         try {
