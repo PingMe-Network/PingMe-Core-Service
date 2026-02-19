@@ -3,6 +3,7 @@ package me.huynhducphu.ping_me.dto.response.reels;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 public class ReelCommentResponse {
@@ -19,7 +20,7 @@ public class ReelCommentResponse {
     private LocalDateTime createdAt;
     private Long reactionCount;
 
-    private java.util.Map<String, Long> reactionSummary;
+    private Map<String, Long> reactionSummary;
     private String myReaction;
     private Boolean isPinned;
     private Long parentId;

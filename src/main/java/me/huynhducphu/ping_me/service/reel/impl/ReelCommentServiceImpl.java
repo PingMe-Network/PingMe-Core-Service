@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.reels.UpsertReelCommentRequest;
 import me.huynhducphu.ping_me.dto.response.reels.ReelCommentResponse;
+import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.ReactionType;
 import me.huynhducphu.ping_me.model.reels.ReelComment;
 import me.huynhducphu.ping_me.model.reels.ReelCommentReaction;
@@ -14,12 +15,15 @@ import me.huynhducphu.ping_me.repository.jpa.reels.ReelCommentRepository;
 import me.huynhducphu.ping_me.repository.jpa.reels.ReelRepository;
 import me.huynhducphu.ping_me.service.reel.ReelCommentService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
-import org.modelmapper.ModelMapper;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -27,17 +31,13 @@ import org.springframework.transaction.annotation.Transactional;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReelCommentServiceImpl implements ReelCommentService {
 
-    // Repositroy
+    // Repository
     ReelRepository reelRepository;
     ReelCommentRepository reelCommentRepository;
     ReelCommentReactionRepository reactionRepository;
 
     // Provider
     CurrentUserProvider currentUserProvider;
-
-    // Mapper
-    ModelMapper modelMapper;
-
 
     @Override
     public ReelCommentResponse createComment(Long reelId, UpsertReelCommentRequest dto) {
@@ -77,7 +77,7 @@ public class ReelCommentServiceImpl implements ReelCommentService {
     }
 
     @Override
-    public Page<ReelCommentResponse> getComments(Long reelId, Pageable pageable) {
+    public Page<@NonNull ReelCommentResponse> getComments(Long reelId, Pageable pageable) {
         return reelCommentRepository.findByReelIdOrderByCreatedAtDesc(reelId, pageable)
                 .map(this::toResponse);
     }
@@ -108,39 +108,51 @@ public class ReelCommentServiceImpl implements ReelCommentService {
     }
 
 
-    private ReelCommentResponse toResponse(ReelComment c) {
-        var me = currentUserProvider.get();
+    private ReelCommentResponse toResponse(ReelComment reelComment) {
 
-        ReelCommentResponse res = modelMapper.map(c, ReelCommentResponse.class);
-        res.setReelId(c.getReel().getId());
-        res.setUserId(c.getUser().getId());
-        res.setUserName(c.getUser().getName());
-        res.setUserAvatarUrl(c.getUser().getAvatarUrl());
+        User user = currentUserProvider.get();
+        boolean isOwner = reelComment
+                .getUser()
+                .getId()
+                .equals(reelComment.getReel().getUser().getId());
+        long totalReactions = reactionRepository.countByCommentId(reelComment.getId());
 
-        res.setIsPinned(c.getIsPinned());
-        res.setParentId(c.getParent() != null ? c.getParent().getId() : null);
-
-        long totalReactions = reactionRepository.countByCommentId(c.getId());
-        res.setReactionCount(totalReactions);
-
-        java.util.Map<String, Long> summary = new java.util.HashMap<>();
+        Map<String, Long> summary = new HashMap<>();
         for (var t : ReactionType.values()) {
-            long cnt = reactionRepository.countByCommentIdAndType(c.getId(), t);
+            long cnt = reactionRepository.countByCommentIdAndType(reelComment.getId(), t);
             if (cnt > 0) summary.put(t.name(), cnt);
         }
-        res.setReactionSummary(summary);
 
-        var myReact = reactionRepository.findByCommentIdAndUserId(c.getId(), me.getId());
-        res.setMyReaction(myReact.map(r -> r.getType().name()).orElse(null));
+        ReelCommentResponse res = new ReelCommentResponse();
+        var myReact = reactionRepository
+                .findByCommentIdAndUserId(reelComment.getId(), user.getId())
+                .map(x -> x.getType().name())
+                .orElse(null);
 
-        boolean isOwner = c.getUser().getId().equals(c.getReel().getUser().getId());
+        res.setId(reelComment.getId());
+        res.setContent(reelComment.getContent());
+
+        res.setReelId(reelComment.getReel().getId());
         res.setIsReelOwner(isOwner);
+
+        res.setUserId(reelComment.getUser().getId());
+        res.setUserName(reelComment.getUser().getName());
+        res.setUserAvatarUrl(reelComment.getUser().getAvatarUrl());
+
+        res.setCreatedAt(reelComment.getCreatedAt());
+        res.setReactionCount(totalReactions);
+
+        res.setReactionSummary(summary);
+        res.setMyReaction(myReact);
+        res.setIsPinned(reelComment.getIsPinned());
+        res.setParentId(reelComment.getParent() != null ? reelComment.getParent().getId() : null);
+
         return res;
     }
 
 
     @Override
-    public Page<ReelCommentResponse> getReplies(Long commentId, Pageable pageable) {
+    public Page<@NonNull ReelCommentResponse> getReplies(Long commentId, Pageable pageable) {
         return reelCommentRepository.findByParentIdOrderByCreatedAtAsc(commentId, pageable)
                 .map(this::toResponse);
     }

@@ -2,7 +2,6 @@ package me.huynhducphu.ping_me.service.reel.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -17,7 +16,7 @@ import me.huynhducphu.ping_me.service.reel.ReelSearchHistoryService;
 import me.huynhducphu.ping_me.service.reel.ReelService;
 import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
-import org.modelmapper.ModelMapper;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,9 +58,6 @@ public class ReelServiceImpl implements ReelService {
     // Service
     S3Service s3Service;
     ReelSearchHistoryService reelSearchHistoryService;
-
-    // Mapper
-    ModelMapper modelMapper;
 
     /**
      * =====================================
@@ -154,7 +150,7 @@ public class ReelServiceImpl implements ReelService {
         }
         // handled below with hashtag-aware search
         String q = query.trim();
-        Page<Reel> rawPage;
+        Page<@NonNull Reel> rawPage;
         if (q.startsWith("#")) {
             // normalize tag for search (strip leading '#')
             String tag = q.substring(1).toLowerCase();
@@ -268,14 +264,19 @@ public class ReelServiceImpl implements ReelService {
      * HÀM PHỤ
      * =====================================
      */
-    private ReelResponse toReelResponse(Reel reel, Long meId) {
-        ReelResponse res = modelMapper.map(reel, ReelResponse.class);
+    private ReelResponse toReelResponse(Reel reel, Long userId) {
+        ReelResponse res = new ReelResponse();
+
+        res.setId(reel.getId());
+        res.setVideoUrl(reel.getVideoUrl());
+        res.setCaption(reel.getCaption());
 
         long likeCount = reelLikeRepository.countByReelId(reel.getId());
         long commentCount = reelCommentRepository.countByReelId(reel.getId());
-        boolean isLikedByMe = reelLikeRepository.existsByReelIdAndUserId(reel.getId(), meId);
-        boolean isSavedByMe = reelSaveRepository.existsByReelIdAndUserId(reel.getId(), meId);
+        boolean isLikedByMe = reelLikeRepository.existsByReelIdAndUserId(reel.getId(), userId);
+        boolean isSavedByMe = reelSaveRepository.existsByReelIdAndUserId(reel.getId(), userId);
 
+        res.setViewCount(reel.getViewCount());
         res.setLikeCount(likeCount);
         res.setCommentCount(commentCount);
         res.setIsLikedByMe(isLikedByMe);
@@ -285,6 +286,9 @@ public class ReelServiceImpl implements ReelService {
         res.setUserName(reel.getUser().getName());
         res.setUserAvatarUrl(reel.getUser().getAvatarUrl());
         res.setHashtags(reel.getHashtags());
+
+        res.setCreatedAt(reel.getCreatedAt());
+
         return res;
     }
 

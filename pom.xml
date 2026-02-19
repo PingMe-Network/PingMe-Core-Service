@@ -145,11 +145,6 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.modelmapper</groupId>
-            <artifactId>modelmapper</artifactId>
-            <version>3.2.6</version>
-        </dependency>
         <!-- ===================== AWS ===================== -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -288,7 +283,7 @@
                     </buildArgs>
                 </configuration>
             </plugin>
-            
+
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
