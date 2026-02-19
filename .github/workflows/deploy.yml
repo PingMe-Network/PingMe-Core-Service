@@ -77,7 +77,7 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: PingMe
           environment_name: PingMe-env
-          version_label: v-${{ github.run_number }}
+          version_label: v-${{ github.run_id }}-${{ github.run_attempt }}
           region: ap-southeast-1
           deployment_package: deploy.zip
 
