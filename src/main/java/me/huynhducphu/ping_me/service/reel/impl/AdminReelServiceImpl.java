@@ -4,14 +4,13 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.dto.request.reels.AdminReelFilterRequest;
 import me.huynhducphu.ping_me.dto.response.reels.AdminReelResponse;
 import me.huynhducphu.ping_me.model.constant.ReelStatus;
 import me.huynhducphu.ping_me.model.reels.Reel;
 import me.huynhducphu.ping_me.repository.jpa.reels.*;
 import me.huynhducphu.ping_me.repository.jpa.reels.spec.ReelSpecifications;
-import me.huynhducphu.ping_me.config.s3.S3Service;
-import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,9 +31,6 @@ public class AdminReelServiceImpl implements me.huynhducphu.ping_me.service.reel
 
     // Service
     S3Service s3Service;
-
-    // Mapper
-    ModelMapper modelMapper;
 
     @Override
     public Page<AdminReelResponse> getReels(AdminReelFilterRequest filter, Pageable pageable) {
@@ -87,12 +83,17 @@ public class AdminReelServiceImpl implements me.huynhducphu.ping_me.service.reel
     }
 
     private AdminReelResponse toAdminResponse(Reel reel) {
-        AdminReelResponse res = modelMapper.map(reel, AdminReelResponse.class);
+        AdminReelResponse res = new AdminReelResponse();
+
+        res.setId(reel.getId());
+        res.setVideoUrl(reel.getVideoUrl());
+        res.setCaption(reel.getCaption());
 
         long likeCount = reelLikeRepository.countByReelId(reel.getId());
         long commentCount = reelCommentRepository.countByReelId(reel.getId());
         long saveCount = reelSaveRepository.countByReelId(reel.getId());
 
+        res.setViewCount(reel.getViewCount());
         res.setLikeCount(likeCount);
         res.setCommentCount(commentCount);
         res.setSaveCount(saveCount);
@@ -100,8 +101,12 @@ public class AdminReelServiceImpl implements me.huynhducphu.ping_me.service.reel
         res.setUserId(reel.getUser().getId());
         res.setUserName(reel.getUser().getName());
         res.setUserAvatarUrl(reel.getUser().getAvatarUrl());
-        // res.setStatus(reel.getStatus().name());
-        // res.setAdminNote(reel.getAdminNote());
+
+        res.setStatus(reel.getStatus().name());
+        res.setAdminNote(reel.getAdminNote());
+
+        res.setCreatedAt(reel.getCreatedAt());
+
         return res;
     }
 }

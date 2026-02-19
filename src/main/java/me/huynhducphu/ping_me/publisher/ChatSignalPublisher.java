@@ -1,7 +1,6 @@
 package me.huynhducphu.ping_me.publisher;
 
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.config.websocket.auth.UserSocketPrincipal;
 import me.huynhducphu.ping_me.dto.ws.WsBroadcastWrapper;

@@ -24,7 +24,8 @@ public class ReelResponse {
     private Long userId;
     private String userName;
     private String userAvatarUrl;
+    private List<String> hashtags;
 
     private LocalDateTime createdAt;
-    private List<String> hashtags;
+
 }
