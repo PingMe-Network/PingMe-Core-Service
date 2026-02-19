@@ -1,6 +1,7 @@
 package me.huynhducphu.ping_me.service.chat.impl;
 
 import lombok.RequiredArgsConstructor;
+import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.dto.request.chat.room.AddGroupMembersRequest;
 import me.huynhducphu.ping_me.dto.request.chat.room.CreateGroupRoomRequest;
 import me.huynhducphu.ping_me.dto.request.chat.room.CreateOrGetDirectRoomRequest;
@@ -14,7 +15,6 @@ import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.repository.jpa.chat.RoomParticipantRepository;
 import me.huynhducphu.ping_me.repository.jpa.chat.RoomRepository;
 import me.huynhducphu.ping_me.service.chat.MessageService;
-import me.huynhducphu.ping_me.config.s3.S3Service;
 import me.huynhducphu.ping_me.service.chat.event.room.*;
 import me.huynhducphu.ping_me.service.user.CurrentUserProvider;
 import me.huynhducphu.ping_me.utils.mapper.ChatMapper;

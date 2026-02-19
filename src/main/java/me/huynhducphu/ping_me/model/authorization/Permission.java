@@ -5,7 +5,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 
-import java.util.List;
 import java.util.Set;
 
 /**

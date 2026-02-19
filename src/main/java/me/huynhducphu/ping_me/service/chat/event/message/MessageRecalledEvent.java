@@ -1,6 +1,9 @@
 package me.huynhducphu.ping_me.service.chat.event.message;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Admin 11/3/2025

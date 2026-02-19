@@ -2,8 +2,8 @@ package me.huynhducphu.ping_me.config.websocket.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.huynhducphu.ping_me.repository.jpa.chat.RoomParticipantRepository;
 import me.huynhducphu.ping_me.model.common.RoomMemberId;
+import me.huynhducphu.ping_me.repository.jpa.chat.RoomParticipantRepository;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
