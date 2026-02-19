@@ -26,22 +26,13 @@ jobs:
         run: mvn clean compile -DskipTests
 
       # 2b. Branch Main: build + push docker
-      - name: Log in to Docker Hub
-        if: github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build & Push Native Image (Buildpacks)
+      - name: Build & Push Docker Image with Jib
         if: github.ref == 'refs/heads/main'
         run: |
-          mvn -Pnative -DskipTests spring-boot:build-image \
-            -Dspring-boot.build-image.builder=paketobuildpacks/builder-jammy-java-tiny \
-            -Dspring-boot.build-image.imageName=${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native \
-            -Dspring-boot.build-image.publish=true \
-            -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE=true \
-            -Dspring-boot.build-image.environment.BPE_APPEND_JAVA_TOOL_OPTIONS="-Xmx6g"
+          mvn clean compile jib:build \
+            -DskipTests \
+            -Djib.to.auth.username=${{ secrets.DOCKER_USERNAME }} \
+            -Djib.to.auth.password=${{ secrets.DOCKER_PASSWORD }}
 
   deploy:
     name: Deploy
@@ -58,7 +49,7 @@ jobs:
           {
             "AWSEBDockerrunVersion": "1",
             "Image": {
-              "Name": "${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native",
+              "Name": "${{ secrets.DOCKER_USERNAME }}/pingme-core-service:latest",
               "Update": "true"
             },
             "Ports": [
