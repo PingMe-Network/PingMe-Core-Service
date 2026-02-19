@@ -72,11 +72,9 @@ public class Message {
      * =====================================
      */
 
-    @Indexed
     @Field("sender_id")
     Long senderId;
 
-    @Indexed
     @Field("room_id")
     Long roomId;
 
