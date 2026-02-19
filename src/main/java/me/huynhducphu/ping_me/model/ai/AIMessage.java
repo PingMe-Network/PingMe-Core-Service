@@ -1,11 +1,10 @@
 package me.huynhducphu.ping_me.model.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.constant.AIMessageType;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Persistable;
@@ -31,42 +30,67 @@ import java.util.UUID;
         @CompoundIndex(
                 name = "idx_msg_room_created_id",
                 def = "{'chatRoomId': 1, 'created_at': -1, '_id': -1}"
+        ),
+        @CompoundIndex(
+                name = "idx_msg_room_user_created",
+                def = "{'chatRoomId': 1, 'user_id': 1, 'created_at': -1}"
+        ),
+        @CompoundIndex(
+                name = "idx_msg_user_created",
+                def = "{'user_id': 1, 'created_at': -1}"
         )
 })
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class AIMessage implements Persistable<UUID> {
+@Getter
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class AIMessage implements Persistable<@NonNull UUID> {
+
     @Id
-    @EqualsAndHashCode.Include
-    private UUID id;
+    UUID id;
 
-    @Field("chatRoomId")
-    private UUID chatRoomId;
-
-    @Indexed
-    @Field("user_id")
-    private Long userId;
-
-    @Field("sender")
-    private AIMessageType type; // "sent" or "received"
+    /**
+     * =====================================
+     * Nội dung chính
+     * =====================================
+     */
 
     @Field("content")
-    private String content;
+    String content;
 
     @Field("attachments")
-    private List<Attachment> attachments;
+    List<Attachment> attachments;
+
+    @Field("sender")
+    AIMessageType type;
 
     @CreatedDate
     @Field("created_at")
-    private LocalDateTime createdAt;
+    LocalDateTime createdAt;
 
-    @Data
+    /**
+     * =====================================
+     * Quan hệ phụ thuộc
+     * =====================================
+     */
+
+    @Field("chatRoomId")
+    UUID chatRoomId;
+
+    @Indexed
+    @Field("user_id")
+    Long userId;
+
+
     @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    @Setter
+    @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class Attachment {
-        private String url;
-        private String fileType; // "image/png", "application/pdf", v.v.
+        String url;
+        String fileType;
     }
 
     @JsonIgnore
