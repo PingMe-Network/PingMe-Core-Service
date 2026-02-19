@@ -2,6 +2,8 @@ package me.huynhducphu.ping_me.repository.jpa.auth;
 
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
+import me.huynhducphu.ping_me.model.constant.UserStatus;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,17 +27,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.status = 'ONLINE' WHERE u.id = :userId")
-    void connect(@Param("userId") Long userId);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE User u SET u.status = 'OFFLINE' WHERE u.id = :userId")
-    void disconnect(@Param("userId") Long userId);
+    @Query("UPDATE User u SET u.status = :status WHERE u.id = :userId")
+    void updateStatus(@Param("userId") Long userId, @Param("status") UserStatus status);
 
     @Transactional
     @Query("SELECT u FROM User u WHERE u.accountStatus = :accountStatus")
-    Page<User> findByAccountStatus(@Param("accountStatus") AccountStatus accountStatus, Pageable pageable);
+    Page<@NonNull User> findByAccountStatus(@Param("accountStatus") AccountStatus accountStatus, Pageable pageable);
 
     @Transactional
     User findByEmail(String email);

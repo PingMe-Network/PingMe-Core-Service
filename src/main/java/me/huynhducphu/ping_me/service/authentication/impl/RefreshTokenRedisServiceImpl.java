@@ -41,11 +41,24 @@ public class RefreshTokenRedisServiceImpl implements RefreshTokenRedisService {
     ) {
         String sessionId = buildKey(token, userId);
 
+        String deviceType = "unknown";
+        String browser = "unknown";
+        String os = "unknown";
+
+        if (submitSessionMetaRequest != null) {
+            if (submitSessionMetaRequest.getDeviceType() != null && !submitSessionMetaRequest.getDeviceType().isBlank())
+                deviceType = submitSessionMetaRequest.getDeviceType();
+            if (submitSessionMetaRequest.getBrowser() != null && !submitSessionMetaRequest.getBrowser().isBlank())
+                browser = submitSessionMetaRequest.getBrowser();
+            if (submitSessionMetaRequest.getOs() != null && !submitSessionMetaRequest.getOs().isBlank())
+                os = submitSessionMetaRequest.getOs();
+        }
+
         DeviceMeta deviceMeta = new DeviceMeta(
                 sessionId,
-                submitSessionMetaRequest.getDeviceType(),
-                submitSessionMetaRequest.getBrowser(),
-                submitSessionMetaRequest.getOs(),
+                deviceType,
+                browser,
+                os,
                 Instant.now().toString()
         );
 

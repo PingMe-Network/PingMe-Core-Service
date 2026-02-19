@@ -12,6 +12,7 @@ import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserProfileResp
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.constant.AccountStatus;
+import me.huynhducphu.ping_me.model.constant.UserStatus;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
 import me.huynhducphu.ping_me.config.auth.JwtBuilder;
 import me.huynhducphu.ping_me.config.s3.S3Service;
@@ -122,13 +123,8 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
     }
 
     @Override
-    public void connect(Long userId) {
-        userRepository.connect(userId);
-    }
-
-    @Override
-    public void disconnect(Long userId) {
-        userRepository.disconnect(userId);
+    public void updateStatus(Long userId, UserStatus status) {
+        userRepository.updateStatus(userId, status);
     }
 
     @Override
@@ -138,8 +134,7 @@ public class CurrentUserProfileServiceImpl implements CurrentUserProfileService 
 
         if (currentUser == null) throw new NullPointerException("User not found!");
 
-        boolean isMatch = request.getNewPassword()
-                .equalsIgnoreCase(request.getConfirmNewPassword());
+        boolean isMatch = request.getNewPassword().equals(request.getConfirmNewPassword());
         if (!isMatch) throw new IllegalArgumentException("New password and confirm new password do not match!");
 
         try {

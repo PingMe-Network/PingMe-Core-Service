@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.music.AlbumRequest;
 import me.huynhducphu.ping_me.dto.response.music.AlbumResponse;
 import me.huynhducphu.ping_me.model.music.Album;
@@ -20,11 +22,15 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AlbumServiceImpl implements AlbumService {
 
-    private final AlbumRepository albumRepository;
-    private final ArtistRepository artistRepository;
-    private final S3Service s3Service;
+    // Repository
+    AlbumRepository albumRepository;
+    ArtistRepository artistRepository;
+
+    // Service
+    S3Service s3Service;
 
     @Override
     public Page<AlbumResponse> getAllAlbums(Pageable pageable) {

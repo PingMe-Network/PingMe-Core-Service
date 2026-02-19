@@ -7,6 +7,7 @@ import me.huynhducphu.ping_me.dto.response.authentication.ActiveAccountResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CreateNewPasswordResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserProfileResponse;
 import me.huynhducphu.ping_me.dto.response.authentication.CurrentUserSessionResponse;
+import me.huynhducphu.ping_me.model.constant.UserStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -30,9 +31,7 @@ public interface CurrentUserProfileService {
             MultipartFile avatarFile
     );
 
-    void connect(Long userId);
-
-    void disconnect(Long userId);
+    void updateStatus(Long userId, UserStatus status);
 
     CreateNewPasswordResponse createNewPassword(CreateNewPasswordRequest request);
 

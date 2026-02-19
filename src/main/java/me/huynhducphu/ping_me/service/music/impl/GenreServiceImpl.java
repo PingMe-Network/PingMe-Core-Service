@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.music.GenreRequest;
 import me.huynhducphu.ping_me.dto.response.music.GenreResponse;
 import me.huynhducphu.ping_me.dto.response.music.misc.GenreDto;
@@ -23,8 +25,10 @@ import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GenreServiceImpl implements GenreService {
-    private final GenreRepository genreRepository;
+
+    GenreRepository genreRepository;
 
     @Override
     public GenreResponse getGenreById(Long id) {

@@ -2,9 +2,11 @@ package me.huynhducphu.ping_me.model.authorization;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Admin 10/25/2025
@@ -16,18 +18,19 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Permission extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
     @Column(unique = true)
-    private String name;
+    String name;
 
-    private String description;
+    String description;
 
     @ManyToMany(mappedBy = "permissions")
     @ToString.Exclude
-    private List<Role> roles;
+    Set<Role> roles;
 }

@@ -1,6 +1,7 @@
 package me.huynhducphu.ping_me.model.chat;
 
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.constant.MessageType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -24,6 +25,10 @@ import java.util.UUID;
                 unique = true
         ),
         @CompoundIndex(
+                name = "idx_msg_room_id_id",
+                def = "{'roomId': 1, '_id': -1}"
+        ),
+        @CompoundIndex(
                 name = "idx_msg_room_created_id",
                 def = "{'roomId': 1, 'createdAt': -1, '_id': -1}"
         )
@@ -32,35 +37,48 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Message {
 
     @Id
     @EqualsAndHashCode.Include
-    private String id;
+    String id;
+
+    /**
+     * =====================================
+     * Nội dung chính
+     * =====================================
+     */
 
     @Field("content")
-    private String content;
+    String content;
 
     @Field("type")
-    private MessageType type;
+    MessageType type;
 
     @Field("client_msg_id")
-    private UUID clientMsgId;
+    UUID clientMsgId;
 
-    @Indexed
-    @Field("sender_id")
-    private Long senderId;
-
-    @Indexed
-    @Field("room_id")
-    private Long roomId;
+    @Field("is_active")
+    Boolean isActive = true;
 
     @CreatedDate
     @Field("created_at")
-    private LocalDateTime createdAt;
+    LocalDateTime createdAt;
 
-    @Field("is_active")
-    private Boolean isActive = true;
+    /**
+     * =====================================
+     * Quan hệ phụ thuộc
+     * =====================================
+     */
+
+    @Indexed
+    @Field("sender_id")
+    Long senderId;
+
+    @Indexed
+    @Field("room_id")
+    Long roomId;
 
     public boolean isActive() {
         return Boolean.TRUE.equals(isActive);
