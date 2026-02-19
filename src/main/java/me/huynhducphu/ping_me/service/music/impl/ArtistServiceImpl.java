@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.request.music.ArtistRequest;
 import me.huynhducphu.ping_me.dto.response.music.ArtistResponse;
 import me.huynhducphu.ping_me.model.music.Artist;
@@ -17,12 +19,17 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ArtistServiceImpl implements ArtistService {
 
-    private final ArtistRepository artistRepository;
-    private final S3Service s3Service;
+    // Repository
+    ArtistRepository artistRepository;
 
-    private static final Long MAX_IMG_SIZE = 5L * 1024L * 1024L; // 5MB
+    // Service
+    S3Service s3Service;
+
+    // Constant
+    static Long MAX_IMG_SIZE = 5L * 1024L * 1024L;
 
     @Override
     public Page<ArtistResponse> getAllArtists(Pageable pageable) {

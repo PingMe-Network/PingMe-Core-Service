@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.response.music.misc.PlaylistDetailDto;
 import me.huynhducphu.ping_me.dto.response.music.misc.PlaylistDto;
 import me.huynhducphu.ping_me.model.User;
@@ -25,12 +27,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PlaylistServiceImpl implements PlaylistService {
-    private final PlaylistRepository playlistRepository;
-    private final PlaylistSongRepository playlistSongRepository;
-    private final SongRepository songRepository;
-    private final CurrentUserProvider currentUserProvider;
-    private final UserRepository userRepository;
+
+    // Repository
+    PlaylistRepository playlistRepository;
+    PlaylistSongRepository playlistSongRepository;
+    SongRepository songRepository;
+    UserRepository userRepository;
+
+    // Provider
+    CurrentUserProvider currentUserProvider;
 
 
     @Override

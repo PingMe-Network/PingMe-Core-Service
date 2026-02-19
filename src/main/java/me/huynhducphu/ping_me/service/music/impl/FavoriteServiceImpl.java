@@ -1,6 +1,8 @@
 package me.huynhducphu.ping_me.service.music.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.dto.response.music.misc.FavoriteDto;
 import me.huynhducphu.ping_me.model.music.FavoriteSong;
 import me.huynhducphu.ping_me.repository.jpa.auth.UserRepository;
@@ -16,12 +18,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FavoriteServiceImpl implements FavoriteService {
-    private final FavoriteSongRepository favoriteSongRepository;
-    private final SongRepository songRepository;
-    private final CurrentUserProvider currentUserProvider;
-    private final UserRepository userRepository;
 
+    // Repository
+    FavoriteSongRepository favoriteSongRepository;
+    SongRepository songRepository;
+    UserRepository userRepository;
+
+    // Provider
+    CurrentUserProvider currentUserProvider;
+    
     @Override
     public List<FavoriteDto> getFavorites() {
         var userId = currentUserProvider.get().getId();
