@@ -2,10 +2,12 @@ package me.huynhducphu.ping_me.model.authorization;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.User;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Admin 10/25/2025
@@ -17,16 +19,17 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Role extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
     @Column(unique = true)
-    private String name;
+    String name;
 
-    private String description;
+    String description;
 
     @ManyToMany
     @JoinTable(
@@ -35,9 +38,9 @@ public class Role extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     @ToString.Exclude
-    private List<Permission> permissions;
+    Set<Permission> permissions;
 
     @OneToMany(mappedBy = "role")
-    private List<User> users;
+    List<User> users;
 
 }

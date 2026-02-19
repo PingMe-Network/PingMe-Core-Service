@@ -1,5 +1,6 @@
 package me.huynhducphu.ping_me.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -76,9 +77,10 @@ public class User extends BaseEntity {
     @Column(name = "auth_provider", nullable = false)
     AuthProvider authProvider;
 
+    @JsonIgnore
     String password;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     Role role;
 
