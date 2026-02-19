@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.huynhducphu.ping_me.config.websocket.auth.UserSocketPrincipal;
 import me.huynhducphu.ping_me.dto.ws.user_status.UserOnlineStatusRespone;
 import me.huynhducphu.ping_me.model.chat.Friendship;
+import me.huynhducphu.ping_me.model.constant.UserStatus;
 import me.huynhducphu.ping_me.service.friendship.FriendshipService;
 import me.huynhducphu.ping_me.service.user.CurrentUserProfileService;
 import me.huynhducphu.ping_me.utils.mapper.UserMapper;
@@ -42,7 +43,7 @@ public class UserOnlineListener {
         Long userId = userPrincipal.getId();
         String name = userPrincipal.getName();
 
-        currentUserProfileService.connect(userId);
+        currentUserProfileService.updateStatus(userId, UserStatus.ONLINE);
         var friends = friendshipService.getAllFriendshipsOfCurrentUser(userPrincipal.getEmail());
         var payload = new UserOnlineStatusRespone(userId, name, true);
 
@@ -64,7 +65,7 @@ public class UserOnlineListener {
         Long userId = userPrincipal.getId();
         String name = userPrincipal.getName();
 
-        currentUserProfileService.disconnect(userId);
+        currentUserProfileService.updateStatus(userId, UserStatus.OFFLINE);
         var friends = friendshipService.getAllFriendshipsOfCurrentUser(userPrincipal.getEmail());
         var payload = new UserOnlineStatusRespone(userId, name, false);
 

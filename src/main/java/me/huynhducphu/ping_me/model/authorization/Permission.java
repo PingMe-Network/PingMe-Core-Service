@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import me.huynhducphu.ping_me.model.common.BaseEntity;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Admin 10/25/2025
@@ -28,4 +29,8 @@ public class Permission extends BaseEntity {
     String name;
 
     String description;
+
+    @ManyToMany(mappedBy = "permissions")
+    @ToString.Exclude
+    Set<Role> roles;
 }
