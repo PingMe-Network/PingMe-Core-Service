@@ -37,7 +37,8 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           mvn -DskipTests spring-boot:build-image \
-            -Dspring-boot.build-image.imageName=${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native-${{ github.run_number }} \
+            -Dspring-boot.build-image.builder=paketobuildpacks/builder-jammy-java-tiny \
+            -Dspring-boot.build-image.imageName=${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native \
             -Dspring-boot.build-image.publish=true \
             -Dspring-boot.build-image.environment.BP_NATIVE_IMAGE=true
 
@@ -56,7 +57,7 @@ jobs:
           {
             "AWSEBDockerrunVersion": "1",
             "Image": {
-              "Name": "${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native-${{ github.run_number }}",
+              "Name": "${{ secrets.DOCKER_USERNAME }}/pingme-core-service:native",
               "Update": "true"
             },
             "Ports": [
