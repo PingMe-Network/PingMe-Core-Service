@@ -1,6 +1,9 @@
 package me.huynhducphu.ping_me.service.weather.impl;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import me.huynhducphu.ping_me.dto.response.weather.WeatherResponse;
 import me.huynhducphu.ping_me.service.weather.WeatherService;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,18 +13,22 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WeatherServiceImpl implements WeatherService {
 
     @Value("${weather.api.base-url}")
-    private String baseUrl;
+    @NonFinal
+    String baseUrl;
 
     @Value("${weather.api.key}")
-    private String apiKey;
+    @NonFinal
+    String apiKey;
 
     @Value("${weather.api.units}")
-    private String units;
+    @NonFinal
+    String units;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    RestTemplate restTemplate = new RestTemplate();
 
     @Override
     public WeatherResponse getWeather(double lat, double lon) {
