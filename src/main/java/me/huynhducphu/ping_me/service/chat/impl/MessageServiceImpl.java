@@ -171,50 +171,56 @@ public class MessageServiceImpl implements MessageService {
                     .orElseThrow(() -> ex);
         }
 
-        // Cập nhật trạng thái phòng khi người dùng nhắn tin
-        // Thông tin cập nhật bao gồm:
-        // + Tin nhắn cuối cùng
-        // + Thời gian nhắn tin nhắn cuối cùng
-        room.setLastMessageId(message.getId());
-        room.setLastMessageAt(message.getCreatedAt());
+        try {
+            // Cập nhật trạng thái phòng khi người dùng nhắn tin
+            // Thông tin cập nhật bao gồm:
+            // + Tin nhắn cuối cùng
+            // + Thời gian nhắn tin nhắn cuối cùng
+            room.setLastMessageId(message.getId());
+            room.setLastMessageAt(message.getCreatedAt());
 
-        // Cập nhật trạng thái của người dùng tham gia phòng (người dùng hiện tại)
-        // Thông tin cập nhật bao gồm:
-        // + Tin nhắn lần cuối đọc (seen)
-        // + Thời gian đọc tin nhắn cuối cùng
-        //
-        // Dễ hiểu: người dùng A chat tin nhắn đó, thì mặc
-        // định người dùng A đọc tất cả tin nhắn từ đầu đến tin nhắn
-        // hiện tại của người dùng A
-        Message finalMsg = message;
-        roomParticipant.setLastReadMessageId(finalMsg.getId());
-        roomParticipant.setLastReadAt(finalMsg.getCreatedAt());
+            // Cập nhật trạng thái của người dùng tham gia phòng (người dùng hiện tại)
+            // Thông tin cập nhật bao gồm:
+            // + Tin nhắn lần cuối đọc (seen)
+            // + Thời gian đọc tin nhắn cuối cùng
+            //
+            // Dễ hiểu: người dùng A chat tin nhắn đó, thì mặc
+            // định người dùng A đọc tất cả tin nhắn từ đầu đến tin nhắn
+            // hiện tại của người dùng A
+            Message finalMsg = message;
+            roomParticipant.setLastReadMessageId(finalMsg.getId());
+            roomParticipant.setLastReadAt(finalMsg.getCreatedAt());
 
-        // --------------------------------------------------------------------------------
-        // WEBSOCKET
+            // --------------------------------------------------------------------------------
+            // WEBSOCKET
 
-        // Sự kiện MESSAGE_CREATED (tạo tin nhắn mới)
-        var messageCreatedEvent = new MessageCreatedEvent(message);
+            // Sự kiện MESSAGE_CREATED (tạo tin nhắn mới)
+            var messageCreatedEvent = new MessageCreatedEvent(message);
 
-        // Sử kiện ROOM_UPDATED (thông báo phòng có tin nhắn mới)
-        var roomUpdatedEvent = new RoomUpdatedEvent(
-                room,
-                roomParticipantRepository.findByRoom_Id(room.getId()),
-                null
-        );
+            // Sử kiện ROOM_UPDATED (thông báo phòng có tin nhắn mới)
+            var roomUpdatedEvent = new RoomUpdatedEvent(
+                    room,
+                    roomParticipantRepository.findByRoom_Id(room.getId()),
+                    null
+            );
 
-        // Bắn sự kiện Websocket
-        eventPublisher.publishEvent(messageCreatedEvent);
-        eventPublisher.publishEvent(roomUpdatedEvent);
-        // --------------------------------------------------------------------------------
+            // Bắn sự kiện Websocket
+            eventPublisher.publishEvent(messageCreatedEvent);
+            eventPublisher.publishEvent(roomUpdatedEvent);
+            // --------------------------------------------------------------------------------
 
-        var dto = chatMapper.toMessageResponseDto(message);
+            var dto = chatMapper.toMessageResponseDto(message);
 
-        // Caching Message
-        if (cacheEnabled)
-            messageCachingService.cacheNewMessage(roomId, dto);
+            // Caching Message
+            if (cacheEnabled)
+                messageCachingService.cacheNewMessage(roomId, dto);
 
-        return dto;
+            return dto;
+        } catch (RuntimeException ex) {
+            // Compensation: nếu JPA rollback/exception thì xóa message đã lưu ở Mongo
+            messageRepository.deleteById(message.getId());
+            throw ex;
+        }
     }
 
     // Hàm xử lý gửi tin nhắn dạng MEDIA (File, Video, Image)
