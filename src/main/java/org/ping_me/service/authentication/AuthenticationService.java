@@ -1,0 +1,25 @@
+package org.ping_me.service.authentication;
+
+import org.ping_me.dto.request.authentication.LoginRequest;
+import org.ping_me.dto.request.authentication.RegisterRequest;
+import org.ping_me.dto.request.authentication.SubmitSessionMetaRequest;
+import org.ping_me.dto.response.authentication.AdminLoginResponse;
+import org.ping_me.dto.response.authentication.CurrentUserSessionResponse;
+import org.ping_me.service.authentication.model.AuthResultWrapper;
+import org.springframework.http.ResponseCookie;
+
+/**
+ * Admin 8/4/2025
+ **/
+public interface AuthenticationService {
+    CurrentUserSessionResponse register(
+            RegisterRequest registerRequest);
+
+    AuthResultWrapper login(LoginRequest loginRequest);
+
+    ResponseCookie logout(String refreshToken);
+
+    AuthResultWrapper refreshSession(String refreshToken, SubmitSessionMetaRequest submitSessionMetaRequest);
+
+    AdminLoginResponse adminLogin(LoginRequest loginRequest);
+}

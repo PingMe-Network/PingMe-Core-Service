@@ -33,8 +33,8 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
-JWT_SECRET=change-me
-MESSAGES_AES_KEY=change-me
+JWT_SECRET=change-org
+MESSAGES_AES_KEY=change-org
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 AWS_ACCESS_KEY=...

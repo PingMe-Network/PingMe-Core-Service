@@ -1,8 +1,0 @@
-package me.huynhducphu.ping_me.model.constant;
-
-/**
- * Admin 8/10/2025
- **/
-public enum RoomType {
-    DIRECT, GROUP
-}
