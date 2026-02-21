@@ -13,7 +13,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>me.huynhducphu</groupId>
+    <groupId>org.ping_me</groupId>
     <artifactId>pingme-core-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>PingMe-Core-Service</name>

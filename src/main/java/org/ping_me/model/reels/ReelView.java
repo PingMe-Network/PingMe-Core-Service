@@ -1,0 +1,39 @@
+package org.ping_me.model.reels;
+
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+import org.ping_me.model.User;
+import org.ping_me.model.common.BaseEntity;
+
+@Entity
+@Table(
+        name = "reel_views",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"reel_id", "user_id"})
+)
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
+public class ReelView extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reel_id", nullable = false)
+    Reel reel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    User user;
+
+    public ReelView(Reel reel, User user) {
+        this.reel = reel;
+        this.user = user;
+    }
+}
+

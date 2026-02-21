@@ -1,0 +1,320 @@
+package org.ping_me.service.reel.impl;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import org.jspecify.annotations.NonNull;
+import org.ping_me.config.s3.S3Service;
+import org.ping_me.dto.request.reels.UpsertReelRequest;
+import org.ping_me.dto.response.reels.ReelResponse;
+import org.ping_me.model.reels.Reel;
+import org.ping_me.model.reels.ReelLike;
+import org.ping_me.model.reels.ReelSave;
+import org.ping_me.model.reels.ReelView;
+import org.ping_me.repository.jpa.reels.*;
+import org.ping_me.service.reel.ReelSearchHistoryService;
+import org.ping_me.service.reel.ReelService;
+import org.ping_me.service.user.CurrentUserProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.unit.DataSize;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class ReelServiceImpl implements ReelService {
+
+    @Value("${app.reels.max-video-size}")
+    @NonFinal
+    DataSize maxReelVideoSize;
+
+    @Value("${app.reels.folder}")
+    @NonFinal
+    String reelsFolder;
+
+    // Repository
+    ReelRepository reelRepository;
+    ReelLikeRepository reelLikeRepository;
+    ReelSaveRepository reelSaveRepository;
+    ReelViewRepository reelViewRepository;
+    ReelCommentRepository reelCommentRepository;
+
+    // Provider
+    CurrentUserProvider currentUserProvider;
+
+    // Service
+    S3Service s3Service;
+    ReelSearchHistoryService reelSearchHistoryService;
+
+    /**
+     * =====================================
+     * TẠO - CẬP NHẬT - XÓA REELS
+     * =====================================
+     */
+
+    @Override
+    public ReelResponse createReel(UpsertReelRequest upsertReelRequest, MultipartFile video) {
+        var user = currentUserProvider.get();
+
+        String ext = getFileExtension(video);
+
+        String randomFileName = UUID.randomUUID() + ext;
+        long maxBytes = maxReelVideoSize.toBytes();
+
+        String url = s3Service.uploadFile(
+                video, reelsFolder, randomFileName, true, maxBytes
+        );
+
+        List<String> normalized = normalizeHashtags(upsertReelRequest.getHashtags());
+
+        var reel = new Reel(url, upsertReelRequest.getCaption(), normalized);
+        reel.setUser(user);
+
+        var saved = reelRepository.saveAndFlush(reel);
+        return toReelResponse(saved, user.getId());
+    }
+
+
+    @Override
+    public ReelResponse updateReel(Long reelId, UpsertReelRequest upsertReelRequest) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository.findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        if (!reel.getUser().getId().equals(user.getId()))
+            throw new AccessDeniedException("Bạn không có quyền cập nhật Reel này");
+
+
+        if (upsertReelRequest.getCaption() != null)
+            reel.setCaption(upsertReelRequest.getCaption());
+
+
+        List<String> normalized = normalizeHashtags(upsertReelRequest.getHashtags());
+        reel.setHashtags(normalized);
+
+
+        var saved = reelRepository.save(reel);
+        return toReelResponse(saved, user.getId());
+    }
+
+    @Override
+    public void deleteReel(Long id) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository
+                .findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        if (!reel.getUser().getId().equals(user.getId()))
+            throw new AccessDeniedException("Bạn không có quyền xóa Reel này");
+
+        if (reel.getVideoUrl() != null)
+            s3Service.deleteFileByUrl(reel.getVideoUrl());
+
+        reelRepository.delete(reel);
+    }
+
+    /**
+     * =====================================
+     * LẤY REELS
+     * =====================================
+     */
+
+    @Override
+    public Page<@NonNull ReelResponse> getFeed(Pageable pageable) {
+        var me = currentUserProvider.get();
+
+        return reelRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(reel -> toReelResponse(reel, me.getId()));
+    }
+
+    @Override
+    public Page<@NonNull ReelResponse> searchByTitle(String query, Pageable pageable) {
+        var me = currentUserProvider.get();
+        if (query == null || query.isBlank()) {
+            return getFeed(pageable);
+        }
+        // handled below with hashtag-aware search
+        String q = query.trim();
+        Page<@NonNull Reel> rawPage;
+        if (q.startsWith("#")) {
+            // normalize tag for search (strip leading '#')
+            String tag = q.substring(1).toLowerCase();
+            rawPage = reelRepository.searchByHashtag(tag, pageable);
+        } else {
+            rawPage = reelRepository.searchByTitle(q, pageable);
+        }
+        var page = rawPage.map(reel -> toReelResponse(reel, me.getId()));
+
+        try {
+            // record search history asynchronously; here simple call (swallow errors inside service)
+            reelSearchHistoryService.recordSearch(query.trim(), (int) page.getTotalElements());
+        } catch (Exception ignored) {
+        }
+
+        return page;
+    }
+
+    @Override
+    public Page<@NonNull ReelResponse> getLikedReels(Pageable pageable) {
+        var me = currentUserProvider.get();
+        return reelLikeRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
+                .map(ReelLike::getReel)
+                .map(reel -> toReelResponse(reel, me.getId()));
+    }
+
+    @Override
+    public Page<@NonNull ReelResponse> getMyCreatedReels(Pageable pageable) {
+        var me = currentUserProvider.get();
+        return reelRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
+                .map(reel -> toReelResponse(reel, me.getId()));
+    }
+
+    @Override
+    public Page<@NonNull ReelResponse> getSavedReels(Pageable pageable) {
+        var me = currentUserProvider.get();
+        return reelSaveRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
+                .map(ReelSave::getReel)
+                .map(reel -> toReelResponse(reel, me.getId()));
+    }
+
+    @Override
+    public Page<@NonNull ReelResponse> getViewedReels(Pageable pageable) {
+        var me = currentUserProvider.get();
+        return reelViewRepository.findAllByUserIdOrderByCreatedAtDesc(me.getId(), pageable)
+                .map(ReelView::getReel)
+                .map(reel -> toReelResponse(reel, me.getId()));
+    }
+
+    /**
+     * =====================================
+     * TƯƠNG TÁC VỚI REELS
+     * =====================================
+     */
+
+    @Override
+    public ReelResponse incrementView(Long reelId) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository
+                .findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        reel.setViewCount(reel.getViewCount() + 1);
+        var saved = reelRepository.save(reel);
+
+        if (!reelViewRepository.existsByReelIdAndUserId(reelId, user.getId()))
+            reelViewRepository.save(new ReelView(reel, user));
+
+        return toReelResponse(saved, user.getId());
+    }
+
+    @Override
+    public ReelResponse toggleLike(Long reelId) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository
+                .findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        boolean liked = reelLikeRepository.existsByReelIdAndUserId(reelId, user.getId());
+
+        if (liked)
+            reelLikeRepository.deleteByReelIdAndUserId(reelId, user.getId());
+        else
+            reelLikeRepository.save(new ReelLike(reel, user));
+
+        return toReelResponse(reel, user.getId());
+    }
+
+    @Override
+    public ReelResponse toggleSave(Long reelId) {
+        var user = currentUserProvider.get();
+
+        var reel = reelRepository
+                .findById(reelId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Reel"));
+
+        boolean saved = reelSaveRepository.existsByReelIdAndUserId(reelId, user.getId());
+
+        if (saved)
+            reelSaveRepository.deleteByReelIdAndUserId(reelId, user.getId());
+        else
+            reelSaveRepository.save(new ReelSave(reel, user));
+
+        return toReelResponse(reel, user.getId());
+    }
+
+    /**
+     * =====================================
+     * HÀM PHỤ
+     * =====================================
+     */
+    private ReelResponse toReelResponse(Reel reel, Long userId) {
+        ReelResponse res = new ReelResponse();
+
+        res.setId(reel.getId());
+        res.setVideoUrl(reel.getVideoUrl());
+        res.setCaption(reel.getCaption());
+
+        long likeCount = reelLikeRepository.countByReelId(reel.getId());
+        long commentCount = reelCommentRepository.countByReelId(reel.getId());
+        boolean isLikedByMe = reelLikeRepository.existsByReelIdAndUserId(reel.getId(), userId);
+        boolean isSavedByMe = reelSaveRepository.existsByReelIdAndUserId(reel.getId(), userId);
+
+        res.setViewCount(reel.getViewCount());
+        res.setLikeCount(likeCount);
+        res.setCommentCount(commentCount);
+        res.setIsLikedByMe(isLikedByMe);
+        res.setIsSavedByMe(isSavedByMe);
+
+        res.setUserId(reel.getUser().getId());
+        res.setUserName(reel.getUser().getName());
+        res.setUserAvatarUrl(reel.getUser().getAvatarUrl());
+        res.setHashtags(reel.getHashtags());
+
+        res.setCreatedAt(reel.getCreatedAt());
+
+        return res;
+    }
+
+    private List<String> normalizeHashtags(List<String> rawHashtags) {
+        if (rawHashtags == null) return new ArrayList<>();
+        return rawHashtags.stream()
+                .filter(h -> h != null && !h.isBlank())
+                .map(String::trim)
+                .map(h -> h.startsWith("#") ? h.substring(1) : h)
+                .map(String::toLowerCase)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private static String getFileExtension(MultipartFile video) {
+        if (video == null || video.isEmpty())
+            throw new IllegalArgumentException("Video không được bỏ trống");
+
+        String contentType = video.getContentType();
+        if (contentType == null || !contentType.startsWith("video/"))
+            throw new IllegalArgumentException("File upload phải là video");
+
+        String original = video.getOriginalFilename();
+        return (original != null && original.contains("."))
+                ? original.substring(original.lastIndexOf("."))
+                : ".mp4";
+    }
+
+}

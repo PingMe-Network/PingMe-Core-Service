@@ -1,0 +1,173 @@
+package org.ping_me.service.user.impl;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.ping_me.config.auth.JwtBuilder;
+import org.ping_me.config.s3.S3Service;
+import org.ping_me.dto.request.user.ChangePasswordRequest;
+import org.ping_me.dto.request.user.ChangeProfileRequest;
+import org.ping_me.dto.request.user.CreateNewPasswordRequest;
+import org.ping_me.dto.response.authentication.ActiveAccountResponse;
+import org.ping_me.dto.response.authentication.CreateNewPasswordResponse;
+import org.ping_me.dto.response.authentication.CurrentUserProfileResponse;
+import org.ping_me.dto.response.authentication.CurrentUserSessionResponse;
+import org.ping_me.model.User;
+import org.ping_me.model.constant.AccountStatus;
+import org.ping_me.model.constant.UserStatus;
+import org.ping_me.repository.jpa.auth.UserRepository;
+import org.ping_me.service.user.CurrentUserProfileService;
+import org.ping_me.service.user.CurrentUserProvider;
+import org.ping_me.utils.mapper.UserMapper;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+
+/**
+ * Admin 1/9/2026
+ **/
+@Service
+@RequiredArgsConstructor
+@Transactional
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class CurrentUserProfileServiceImpl implements CurrentUserProfileService {
+
+    PasswordEncoder passwordEncoder;
+
+    S3Service s3Service;
+
+    UserMapper userMapper;
+
+    UserRepository userRepository;
+
+    CurrentUserProvider currentUserProvider;
+
+    JwtBuilder jwtService;
+
+    static Long MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024L;
+
+    @Override
+    public CurrentUserProfileResponse getCurrentUserInfo() {
+        var user = currentUserProvider.get();
+        var currentUserProfileResponse = new CurrentUserProfileResponse(
+                user.getEmail(),
+                user.getName(),
+                user.getAvatarUrl(),
+                user.getGender(),
+                user.getAddress(),
+                user.getDob(),
+                null,
+                user.getAccountStatus()
+        );
+
+        String roleName = user.getRole() != null ? user.getRole().getName() : "";
+        currentUserProfileResponse.setRoleName(roleName);
+        return currentUserProfileResponse;
+    }
+
+    @Override
+    public CurrentUserSessionResponse getCurrentUserSession() {
+        return userMapper.mapToCurrentUserSessionResponse(currentUserProvider.get());
+    }
+
+    @Override
+    public CurrentUserSessionResponse updateCurrentUserPassword(
+            ChangePasswordRequest changePasswordRequest
+    ) {
+        var user = currentUserProvider.get();
+
+        if (!passwordEncoder.matches(changePasswordRequest.getOldPassword(), user.getPassword()))
+            throw new DataIntegrityViolationException("Mật khẩu cũ không chính xác");
+
+        user.setPassword(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+
+        return userMapper.mapToCurrentUserSessionResponse(user);
+    }
+
+    @Override
+    public CurrentUserSessionResponse updateCurrentUserProfile(
+            ChangeProfileRequest changeProfileRequest
+    ) {
+        var user = currentUserProvider.get();
+
+        user.setName(changeProfileRequest.getName());
+        user.setGender(changeProfileRequest.getGender());
+        user.setAddress(changeProfileRequest.getAddress());
+        user.setDob(changeProfileRequest.getDob());
+
+        return userMapper.mapToCurrentUserSessionResponse(user);
+    }
+
+    @Override
+    public CurrentUserSessionResponse updateCurrentUserAvatar(
+            MultipartFile avatarFile
+    ) {
+        var user = currentUserProvider.get();
+
+        String url = s3Service.uploadFile(
+                avatarFile,
+                "avatar",
+                user.getEmail(),
+                true,
+                MAX_AVATAR_FILE_SIZE
+        );
+
+        user.setAvatarUrl(url);
+        user.setUpdatedAt(LocalDateTime.now());
+
+        return userMapper.mapToCurrentUserSessionResponse(user);
+    }
+
+    @Override
+    public void updateStatus(Long userId, UserStatus status) {
+        userRepository.updateStatus(userId, status);
+    }
+
+    @Override
+    public CreateNewPasswordResponse createNewPassword(CreateNewPasswordRequest request) {
+        String email = jwtService.decodeJwt(request.getResetPasswordToken()).getSubject();
+        User currentUser = userRepository.findByEmail(email);
+
+        if (currentUser == null) throw new NullPointerException("User not found!");
+
+        boolean isMatch = request.getNewPassword().equals(request.getConfirmNewPassword());
+        if (!isMatch) throw new IllegalArgumentException("New password and confirm new password do not match!");
+
+        try {
+            currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            userRepository.save(currentUser);
+
+            return CreateNewPasswordResponse.builder()
+                    .isPasswordChanged(true)
+                    .build();
+        } catch (Exception e) {
+            return CreateNewPasswordResponse.builder()
+                    .isPasswordChanged(false)
+                    .build();
+        }
+
+    }
+
+    @Override
+    public ActiveAccountResponse activateAccount() {
+        User currentUser = currentUserProvider.get();
+        if (currentUser.getAccountStatus() != AccountStatus.NON_ACTIVATED)
+            throw new IllegalArgumentException("Account is already activated!");
+        try {
+            currentUser.setAccountStatus(AccountStatus.ACTIVE);
+            userRepository.save(currentUser);
+            return ActiveAccountResponse.builder()
+                    .isActivated(true)
+                    .build();
+        } catch (Exception e) {
+            return ActiveAccountResponse.builder()
+                    .isActivated(false)
+                    .build();
+        }
+    }
+
+}
