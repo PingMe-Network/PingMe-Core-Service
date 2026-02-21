@@ -6,7 +6,6 @@ import org.ping_me.dto.ws.friendship.FriendshipEventPayload;
 import org.ping_me.dto.ws.friendship.common.FriendshipEventType;
 import org.ping_me.model.User;
 import org.ping_me.model.chat.Friendship;
-import org.huynhducphu.ping_me.service.friendship.event.*;
 import org.ping_me.service.friendship.event.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;

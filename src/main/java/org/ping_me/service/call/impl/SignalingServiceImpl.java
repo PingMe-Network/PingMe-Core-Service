@@ -6,8 +6,8 @@ import org.ping_me.dto.request.call.SignalingRequest;
 import org.ping_me.dto.response.call.SignalingResponse;
 import org.ping_me.model.common.RoomMemberId;
 import org.ping_me.repository.jpa.chat.RoomParticipantRepository;
-import org.ping_me.service.user.CurrentUserProvider;
 import org.ping_me.service.call.SignalingService;
+import org.ping_me.service.user.CurrentUserProvider;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 

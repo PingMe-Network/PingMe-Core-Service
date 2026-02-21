@@ -1,9 +1,9 @@
 package org.ping_me.repository.jpa.auth;
 
+import org.jspecify.annotations.NonNull;
 import org.ping_me.model.User;
 import org.ping_me.model.constant.AccountStatus;
 import org.ping_me.model.constant.UserStatus;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

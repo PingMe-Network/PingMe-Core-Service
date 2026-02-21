@@ -1,7 +1,7 @@
 package org.ping_me.repository.mongodb.ai;
 
-import org.ping_me.model.ai.AIMessage;
 import org.jetbrains.annotations.NotNull;
+import org.ping_me.model.ai.AIMessage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;

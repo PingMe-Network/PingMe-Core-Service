@@ -15,7 +15,6 @@ import org.ping_me.repository.jpa.auth.UserRepository;
 import org.ping_me.repository.jpa.chat.RoomParticipantRepository;
 import org.ping_me.repository.jpa.chat.RoomRepository;
 import org.ping_me.service.chat.MessageService;
-import org.huynhducphu.ping_me.service.chat.event.room.*;
 import org.ping_me.service.chat.RoomService;
 import org.ping_me.service.chat.event.room.*;
 import org.ping_me.service.user.CurrentUserProvider;

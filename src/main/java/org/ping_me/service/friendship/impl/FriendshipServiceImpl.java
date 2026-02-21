@@ -14,7 +14,6 @@ import org.ping_me.model.constant.FriendshipStatus;
 import org.ping_me.repository.jpa.auth.UserRepository;
 import org.ping_me.repository.jpa.chat.FriendshipRepository;
 import org.ping_me.service.friendship.FriendshipService;
-import org.huynhducphu.ping_me.service.friendship.event.*;
 import org.ping_me.service.friendship.event.*;
 import org.ping_me.service.user.CurrentUserProvider;
 import org.springframework.context.ApplicationEventPublisher;

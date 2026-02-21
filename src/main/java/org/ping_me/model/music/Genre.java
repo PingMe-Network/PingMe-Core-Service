@@ -2,8 +2,8 @@ package org.ping_me.model.music;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.ping_me.model.common.BaseEntity;
 import org.hibernate.annotations.SQLRestriction;
+import org.ping_me.model.common.BaseEntity;
 
 import java.util.Set;
 

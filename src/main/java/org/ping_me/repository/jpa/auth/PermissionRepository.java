@@ -1,7 +1,7 @@
 package org.ping_me.repository.jpa.auth;
 
-import org.ping_me.model.authorization.Permission;
 import org.jspecify.annotations.NonNull;
+import org.ping_me.model.authorization.Permission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

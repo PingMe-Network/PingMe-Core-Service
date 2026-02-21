@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.ping_me.model.constant.MessageType;
 import org.hibernate.validator.constraints.Length;
+import org.ping_me.model.constant.MessageType;
 
 /**
  * Admin 8/26/2025

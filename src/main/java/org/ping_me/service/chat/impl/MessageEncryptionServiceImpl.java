@@ -1,7 +1,7 @@
 package org.ping_me.service.chat.impl;
 
-import org.ping_me.utils.crypt.AesGcmUtil;
 import org.ping_me.service.chat.MessageEncryptionService;
+import org.ping_me.utils.crypt.AesGcmUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

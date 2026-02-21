@@ -12,8 +12,6 @@ import org.ping_me.dto.response.music.misc.AlbumSummaryDto;
 import org.ping_me.dto.response.music.misc.ArtistSummaryDto;
 import org.ping_me.dto.response.music.misc.GenreDto;
 import org.ping_me.model.constant.ArtistRole;
-import org.huynhducphu.ping_me.model.music.*;
-import org.huynhducphu.ping_me.repository.jpa.music.*;
 import org.ping_me.model.music.*;
 import org.ping_me.repository.jpa.music.*;
 import org.ping_me.service.music.SongService;

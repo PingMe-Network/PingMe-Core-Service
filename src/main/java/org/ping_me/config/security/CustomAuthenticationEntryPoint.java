@@ -7,9 +7,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.jspecify.annotations.NullMarked;
 import org.ping_me.advice.base.ErrorCode;
 import org.ping_me.dto.base.ApiResponse;
-import org.jspecify.annotations.NullMarked;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
@@ -52,6 +52,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                         errorCode.getCode()
                 )
         );
-        
+
     }
 }

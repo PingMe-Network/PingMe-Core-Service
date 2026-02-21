@@ -1,7 +1,7 @@
 package org.ping_me.repository.mongodb.ai;
 
-import org.ping_me.model.ai.AIChatRoom;
 import org.jetbrains.annotations.NotNull;
+import org.ping_me.model.ai.AIChatRoom;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.MongoRepository;
