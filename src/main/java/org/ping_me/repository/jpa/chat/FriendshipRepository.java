@@ -1,5 +1,6 @@
 package org.ping_me.repository.jpa.chat;
 
+import org.jspecify.annotations.NonNull;
 import org.ping_me.dto.response.friendship.UserFriendshipStatsResponse;
 import org.ping_me.model.chat.Friendship;
 import org.ping_me.model.constant.FriendshipStatus;
@@ -17,7 +18,7 @@ import java.util.Optional;
  * Admin 8/19/2025
  **/
 @Repository
-public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
+public interface FriendshipRepository extends JpaRepository<@NonNull Friendship, @NonNull Long> {
 
     boolean existsByUserLowIdAndUserHighId(Long userLowId, Long userHighId);
 
@@ -31,7 +32,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
                   AND (:beforeId IS NULL OR f.id < :beforeId)
                 ORDER BY f.id DESC
             """)
-    Page<Friendship> findByStatusAndUserA_IdWithBeforeId(
+    Page<@NonNull Friendship> findByStatusAndUserA_IdWithBeforeId(
             @Param("status") FriendshipStatus status,
             @Param("userId") Long userId,
             @Param("beforeId") Long beforeId,
@@ -47,7 +48,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
                   AND (:beforeId IS NULL OR f.id < :beforeId)
                 ORDER BY f.id DESC
             """)
-    Page<Friendship> findByStatusAndUserB_IdWithBeforeId(
+    Page<@NonNull Friendship> findByStatusAndUserB_IdWithBeforeId(
             @Param("status") FriendshipStatus status,
             @Param("userId") Long userId,
             @Param("beforeId") Long beforeId,
@@ -66,7 +67,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
                   AND (:beforeId IS NULL OR f.id < :beforeId)
                 ORDER BY f.id DESC
             """)
-    Page<Friendship> findAllByStatusAndUserWithBeforeId(
+    Page<@NonNull Friendship> findAllByStatusAndUserWithBeforeId(
             @Param("status") FriendshipStatus status,
             @Param("userId") Long userId,
             @Param("beforeId") Long beforeId,
@@ -74,7 +75,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
     );
 
     @Query("""
-                SELECT new org.huynhducphu.ping_me.dto.response.friendship.UserFriendshipStatsResponse(
+                SELECT new org.ping_me.dto.response.friendship.UserFriendshipStatsResponse(
                   SUM(CASE WHEN f.friendshipStatus = 'ACCEPTED' 
                              AND (f.userA.id = :userId OR f.userB.id = :userId) 
                            THEN 1 ELSE 0 END),

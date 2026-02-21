@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 public interface SongPlayHistoryRepository extends JpaRepository<SongPlayHistory, Long> {
     @Query("""
-                SELECT  new  org.huynhducphu.ping_me.dto.response.music.misc.TopSongPlayCounterDto(
+                SELECT  new  org.ping_me.dto.response.music.misc.TopSongPlayCounterDto(
                     s.id, s.title, s.imgUrl, COUNT(h.id)
                 )
                 FROM SongPlayHistory h
