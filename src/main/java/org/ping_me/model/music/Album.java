@@ -2,6 +2,7 @@ package org.ping_me.model.music;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLRestriction;
 import org.ping_me.model.common.BaseEntity;
 
@@ -9,12 +10,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Entity đại diện cho Album nhạc
  * @author Le Tran Gia Huy
  * @created 20/11/2025 - 3:41 PM
- * @project DHKTPM18ATT_Nhom10_PingMe_Backend
- * @package me.huynhducphu.PingMe_Backend.model.music
  */
-
 @Entity
 @Table(name = "albums")
 @AllArgsConstructor
@@ -22,26 +21,53 @@ import java.util.Set;
 @Getter
 @Setter
 @SQLRestriction("is_deleted = false")
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Album extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
-    //Tên album
+    /**
+     * =====================================
+     * Nội dung chính
+     * =====================================
+     */
+
     @Column(columnDefinition = "VARCHAR(150)", nullable = false)
-    private String title;
+    String title;
 
-    //Chủ sở hữu album (tác giả tạo ra album này)
+    @Column(nullable = false)
+    String coverImageUrl;
+
+    /**
+     * =====================================
+     * Trạng thái & Số liệu
+     * =====================================
+     */
+
+    @Column(nullable = false)
+    Long playCount = 0L;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE", name = "is_deleted")
+    boolean isDeleted = false;
+
+    /**
+     * =====================================
+     * Chủ sở hữu
+     * =====================================
+     */
+
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
-    private Artist albumOwner;
+    Artist albumOwner;
 
-    //Ảnh bìa album (lấy từ S3 xuống)
-    @Column(nullable = false)
-    private String coverImageUrl;
+    /**
+     * =====================================
+     * Quan hệ phụ thuộc (Thể loại, Bài hát, Nghệ sĩ tham gia)
+     * =====================================
+     */
 
-    //Danh sách thể loại của album
     @ManyToMany
     @JoinTable(
             name = "album_genre",
@@ -49,9 +75,8 @@ public class Album extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "genre_id")
     )
     @ToString.Exclude
-    private Set<Genre> genres = new HashSet<>();
+    Set<Genre> genres = new HashSet<>();
 
-    //Danh sách bài hát trong album
     @ManyToMany
     @JoinTable(
             name = "album_song",
@@ -59,9 +84,8 @@ public class Album extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "song_id")
     )
     @ToString.Exclude
-    private Set<Song> songs = new HashSet<>();
+    Set<Song> songs = new HashSet<>();
 
-    //Danh sách nghệ sĩ tham gia trong album
     @ManyToMany
     @JoinTable(
             name = "album_artist",
@@ -69,12 +93,5 @@ public class Album extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
     @ToString.Exclude
-    private Set<Artist> featuredArtists = new HashSet<>();
-
-    //Số lần album được phát
-    @Column(nullable = false)
-    private Long playCount = 0L;
-
-    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE", name = "is_deleted")
-    private boolean isDeleted = false;
+    Set<Artist> featuredArtists = new HashSet<>();
 }

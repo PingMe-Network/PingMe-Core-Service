@@ -2,6 +2,7 @@ package org.ping_me.model.music;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLRestriction;
 import org.ping_me.model.common.BaseEntity;
 
@@ -9,12 +10,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * Entity đại diện cho Nghệ sĩ/Ca sĩ
  * @author Le Tran Gia Huy
  * @created 20/11/2025 - 3:54 PM
- * @project DHKTPM18ATT_Nhom10_PingMe_Backend
- * @package me.huynhducphu.PingMe_Backend.model.music
  */
-
 @Entity
 @Table(name = "artists")
 @AllArgsConstructor
@@ -22,39 +21,58 @@ import java.util.Set;
 @Getter
 @Setter
 @SQLRestriction("is_deleted = false")
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Artist extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
-    // Tên nghệ sĩ
+    /**
+     * =====================================
+     * Thông tin cơ bản (Tên, Tiểu sử, Ảnh)
+     * =====================================
+     */
+
     @Column(columnDefinition = "VARCHAR(150)", nullable = false)
-    private String name;
+    String name;
 
-    // Tiểu sử nghệ sĩ
     @Column(columnDefinition = "TEXT")
-    private String bio;
+    String bio;
 
-    // Ảnh đại diện nghệ sĩ (lấy từ 3S xuống)
     @Column(nullable = false)
-    private String imgUrl;
+    String imgUrl;
 
-    // Các bài hát mà nghệ sĩ này tham gia với vai trò khác nhau
-    @OneToMany(mappedBy = "artist")
-    @ToString.Exclude
-    private List<SongArtistRole> songRoles;
-
-    // Các album mà nghệ sĩ này sở hữu/tạo ra
-    @OneToMany(mappedBy = "albumOwner")
-    @ToString.Exclude
-    private List<Album> ownAlbums;
-
-    // Các album mà nghệ sĩ này được giới thiệu (hoặc được tham gia trong đó)
-    @ManyToMany(mappedBy = "featuredArtists")
-    @ToString.Exclude
-    private Set<Album> albums;
+    /**
+     * =====================================
+     * Trạng thái
+     * =====================================
+     */
 
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean isDeleted = false;
+    boolean isDeleted = false;
+
+    /**
+     * =====================================
+     * Quan hệ với bài hát (Vai trò trong bài hát)
+     * =====================================
+     */
+
+    @OneToMany(mappedBy = "artist")
+    @ToString.Exclude
+    List<SongArtistRole> songRoles;
+
+    /**
+     * =====================================
+     * Quan hệ với album (Sở hữu, Tham gia)
+     * =====================================
+     */
+
+    @OneToMany(mappedBy = "albumOwner")
+    @ToString.Exclude
+    List<Album> ownAlbums;
+
+    @ManyToMany(mappedBy = "featuredArtists")
+    @ToString.Exclude
+    Set<Album> albums;
 }
