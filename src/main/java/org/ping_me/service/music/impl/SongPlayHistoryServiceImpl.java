@@ -1,6 +1,8 @@
 package org.ping_me.service.music.impl;
 
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.ping_me.dto.response.music.misc.TopSongPlayCounterDto;
 import org.ping_me.repository.jpa.music.SongPlayHistoryRepository;
 import org.ping_me.service.music.SongPlayHistoryService;
@@ -16,10 +18,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SongPlayHistoryServiceImpl implements SongPlayHistoryService {
+    // Repository
+    SongPlayHistoryRepository songPlayHistoryRepository;
 
-    private final SongPlayHistoryRepository songPlayHistoryRepository;
-    private final RedisTemplate<String, Object> redis;
+    // Redis
+    RedisTemplate<String, Object> redis;
 
     public SongPlayHistoryServiceImpl(
             SongPlayHistoryRepository songPlayHistoryRepository,
