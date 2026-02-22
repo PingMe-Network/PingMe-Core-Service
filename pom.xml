@@ -9,13 +9,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.2</version>
+        <version>4.0.3</version>
         <relativePath/>
     </parent>
 
     <groupId>org.ping_me</groupId>
     <artifactId>pingme-core-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>PingMe-Core-Service</name>
     <description>Core Service for PingMe Network</description>
     <packaging>jar</packaging>

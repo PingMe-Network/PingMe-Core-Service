@@ -27,7 +27,7 @@ import java.util.HashSet;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GenreServiceImpl implements GenreService {
-
+    // Repository
     GenreRepository genreRepository;
 
     @Override

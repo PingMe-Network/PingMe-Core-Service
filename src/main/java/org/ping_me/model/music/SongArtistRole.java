@@ -2,37 +2,49 @@ package org.ping_me.model.music;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.ping_me.model.common.BaseEntity;
 import org.ping_me.model.constant.ArtistRole;
 
 /**
+ * Entity bảng trung gian Song-Artist
+ * Lưu vai trò của nghệ sĩ trong bài hát (Ca sĩ chính, phối khí,...)
  * @author Le Tran Gia Huy
  * @created 20/11/2025 - 4:06 PM
- * @project DHKTPM18ATT_Nhom10_PingMe_Backend
- * @package me.huynhducphu.PingMe_Backend.model.music
  */
-
 @Entity
 @Table(name = "song_artist_role")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@FieldDefaults(level =  AccessLevel.PRIVATE)
 public class SongArtistRole extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
-    //Bên dưới là bài hát và nghệ sĩ liên kết với vai trò cụ thể
+    /**
+     * =====================================
+     * Quan hệ chính (Song ↔ Artist)
+     * =====================================
+     */
+
     @ManyToOne
     @JoinColumn(name = "song_id", nullable = false)
-    private Song song;
+    Song song;
 
     @ManyToOne
     @JoinColumn(name = "artist_id", nullable = false)
-    private Artist artist;
+    Artist artist;
+
+    /**
+     * =====================================
+     * Vai trò trong bài hát
+     * =====================================
+     */
 
     @Enumerated(EnumType.STRING)
-    private ArtistRole role;
+    ArtistRole role;
 }

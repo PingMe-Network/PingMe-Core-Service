@@ -2,18 +2,17 @@ package org.ping_me.model.music;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLRestriction;
 import org.ping_me.model.common.BaseEntity;
 
 import java.util.Set;
 
 /**
+ * Entity đại diện cho Thể loại nhạc (Pop, Rock, Jazz,...)
  * @author Le Tran Gia Huy
  * @created 20/11/2025 - 3:48 PM
- * @project DHKTPM18ATT_Nhom10_PingMe_Backend
- * @package me.huynhducphu.PingMe_Backend.model.music
  */
-
 @Entity
 @Table(name = "genres")
 @AllArgsConstructor
@@ -21,26 +20,44 @@ import java.util.Set;
 @Getter
 @Setter
 @SQLRestriction("is_deleted = false")
+@FieldDefaults(level =  AccessLevel.PRIVATE)
 public class Genre extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
-    private Long id;
+    Long id;
 
-    //Tên thể loại
+    /**
+     * =====================================
+     * Tên thể loại
+     * =====================================
+     */
+
     @Column(columnDefinition = "VARCHAR(100)", nullable = false)
-    private String name;
+    String name;
+
+    /**
+     * =====================================
+     * Trạng thái
+     * =====================================
+     */
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE", name = "is_deleted")
+    boolean isDeleted = false;
+
+    /**
+     * =====================================
+     * Quan hệ với Song & Album
+     * =====================================
+     */
 
     //Danh sách bài hát thuộc thể loại này
     @ManyToMany(mappedBy = "genres")
     @ToString.Exclude
-    private Set<Song> songs;
+    Set<Song> songs;
 
     //Danh sách album thuộc thể loại này
     @ManyToMany(mappedBy = "genres")
     @ToString.Exclude
-    private Set<Album> albums;
-
-    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE", name = "is_deleted")
-    private boolean isDeleted = false;
+    Set<Album> albums;
 }
