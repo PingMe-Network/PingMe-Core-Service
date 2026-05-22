@@ -2,9 +2,7 @@ package org.ping_me.service.chat.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.ping_me.config.s3.S3Service;
@@ -26,6 +24,7 @@ import org.ping_me.dto.response.chat.message.ReadStateResponse;
 import org.ping_me.dto.response.weather.WeatherResponse;
 import org.ping_me.model.User;
 import org.ping_me.model.chat.DeletedMessage;
+import org.ping_me.model.chat.GroupSettings;
 import org.ping_me.model.chat.Message;
 import org.ping_me.model.chat.Poll;
 import org.ping_me.model.chat.PollOption;
@@ -34,8 +33,10 @@ import org.ping_me.model.chat.RoomParticipant;
 import org.ping_me.model.common.DeletedMessageId;
 import org.ping_me.model.common.RoomMemberId;
 import org.ping_me.model.constant.MessageType;
+import org.ping_me.model.constant.RoomRole;
 import org.ping_me.model.constant.RoomType;
 import org.ping_me.repository.jpa.chat.DeletedMessageRepository;
+import org.ping_me.repository.jpa.chat.GroupSettingsRepository;
 import org.ping_me.repository.jpa.chat.RoomParticipantRepository;
 import org.ping_me.repository.jpa.chat.RoomRepository;
 import org.ping_me.repository.mongodb.chat.MessageRepository;
@@ -94,6 +95,7 @@ public class MessageServiceImpl implements MessageService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final DeletedMessageRepository deletedMessageRepository;
+    private final GroupSettingsRepository groupSettingsRepository;
     private final MessageRepository messageRepository;
 
     // PUBLISHER
@@ -181,6 +183,7 @@ public class MessageServiceImpl implements MessageService {
         var roomParticipant = roomParticipantRepository
                 .findById(roomMemberId)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không phải thành viên của phòng chat này"));
+        requireCanSendMessage(room, roomParticipant);
         validateReplyMessage(sendMessageRequest.getRepliedMessageId(), roomId);
 
         // Kiểm tra tin nhắn người dùng gửi đã tồn tại chưa, Kiểm tra bằng mã clientMsgId
@@ -406,6 +409,7 @@ public class MessageServiceImpl implements MessageService {
                 .findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("Phòng chat này không tồn tại"));
         RoomParticipant roomParticipant = validateRoomMember(roomId, senderId);
+        requireCanCreatePoll(room, roomParticipant);
         validateReplyMessage(request.getRepliedMessageId(), roomId);
 
         validatePollRequest(request);
@@ -660,6 +664,7 @@ public class MessageServiceImpl implements MessageService {
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy tin nhắn"));
 
         validateRoomMember(message.getRoomId(), currentUser.getId());
+        requireCanPinMessage(message.getRoomId(), currentUser.getId());
 
         if (!message.isActive()) {
             throw new IllegalArgumentException("Không thể ghim tin nhắn đã thu hồi");
@@ -690,6 +695,7 @@ public class MessageServiceImpl implements MessageService {
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy tin nhắn"));
 
         validateRoomMember(message.getRoomId(), currentUser.getId());
+        requireCanPinMessage(message.getRoomId(), currentUser.getId());
 
         if (!message.isPinned()) {
             return chatMapper.toMessageResponseDto(message);
@@ -857,6 +863,42 @@ public class MessageServiceImpl implements MessageService {
         return roomParticipantRepository
                 .findById(memberId)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không phải thành viên của phòng chat này"));
+    }
+
+    private void requireCanSendMessage(Room room, RoomParticipant participant) {
+        if (room.getRoomType() != RoomType.GROUP || participant.getRole() != RoomRole.MEMBER) {
+            return;
+        }
+        GroupSettings settings = groupSettingsRepository.findByRoomId(room.getId()).orElse(null);
+        if (settings != null && !Boolean.TRUE.equals(settings.getAllowMemberSendMessage())) {
+            throw new AccessDeniedException("Thành viên không được phép gửi tin nhắn trong nhóm này");
+        }
+    }
+
+    private void requireCanCreatePoll(Room room, RoomParticipant participant) {
+        if (room.getRoomType() != RoomType.GROUP || participant.getRole() != RoomRole.MEMBER) {
+            return;
+        }
+        GroupSettings settings = groupSettingsRepository.findByRoomId(room.getId()).orElse(null);
+        if (settings != null && !Boolean.TRUE.equals(settings.getAllowMemberCreatePoll())) {
+            throw new AccessDeniedException("Thành viên không được phép tạo bình chọn trong nhóm này");
+        }
+    }
+
+    private void requireCanPinMessage(Long roomId, Long userId) {
+        Room room = roomRepository.findById(roomId).orElse(null);
+        if (room == null || room.getRoomType() != RoomType.GROUP) {
+            return;
+        }
+        RoomParticipant participant = validateRoomMember(roomId, userId);
+        if (participant.getRole() != RoomRole.MEMBER) {
+            return;
+        }
+
+        GroupSettings settings = groupSettingsRepository.findByRoomId(roomId).orElse(null);
+        if (settings != null && !Boolean.TRUE.equals(settings.getAllowMemberPinMessage())) {
+            throw new AccessDeniedException("Thành viên không được phép ghim tin nhắn trong nhóm này");
+        }
     }
 
     private MessageResponse syncUpdatedMessage(Message message) {
