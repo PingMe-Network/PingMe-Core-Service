@@ -693,8 +693,6 @@ public class MessageServiceImpl implements MessageService {
         Message message = messageRepository
                 .findById(messageId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy tin nhắn"));
-
-        validateRoomMember(message.getRoomId(), currentUser.getId());
         requireCanPinMessage(message.getRoomId(), currentUser.getId());
 
         if (!message.isPinned()) {

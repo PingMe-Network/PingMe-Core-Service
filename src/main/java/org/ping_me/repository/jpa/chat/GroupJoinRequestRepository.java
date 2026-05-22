@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GroupJoinRequestRepository extends JpaRepository<GroupJoinRequest, Long> {
-    Optional<GroupJoinRequest> findByRoom_IdAndRequester_Id(Long roomId, Long requesterId);
+    List<GroupJoinRequest> findAllByRoom_IdAndRequester_Id(Long roomId, Long requesterId);
+
+    Optional<GroupJoinRequest> findByRoom_IdAndRequester_IdAndTargetUser_Id(Long roomId, Long requesterId, Long targetUserId);
 
     List<GroupJoinRequest> findByRoom_IdOrderByCreatedAtDesc(Long roomId);
 

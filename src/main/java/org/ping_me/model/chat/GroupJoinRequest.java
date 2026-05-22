@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "group_join_requests",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_group_join_request_room_user", columnNames = {"room_id", "requester_id"})
+                @UniqueConstraint(name = "uk_group_join_request_room_actor_target", columnNames = {"room_id", "requester_id", "target_user_id"})
         },
         indexes = {
                 @Index(name = "idx_group_join_request_room_status", columnList = "room_id, status")
@@ -51,6 +51,10 @@ public class GroupJoinRequest extends BaseEntity {
     @ManyToOne(optional = false)
     @JoinColumn(name = "requester_id", nullable = false)
     private User requester;
+
+    @ManyToOne
+    @JoinColumn(name = "target_user_id")
+    private User targetUser;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class RoomServiceImpl implements RoomService {
+public class    RoomServiceImpl implements RoomService {
 
     // SERVICE
     private final MessageService messageService;
@@ -235,14 +235,17 @@ public class RoomServiceImpl implements RoomService {
 
                 var targetUser = userRepository.getReferenceById(targetUserId);
                 var joinRequest = groupJoinRequestRepository
-                        .findByRoom_IdAndRequester_Id(room.getId(), targetUserId)
+                        .findByRoom_IdAndRequester_IdAndTargetUser_Id(room.getId(), currentUser.getId(), targetUserId)
                         .orElseGet(() -> {
                             var req = new GroupJoinRequest();
                             req.setRoom(room);
-                            req.setRequester(targetUser);
+                            req.setRequester(currentUser);
+                            req.setTargetUser(targetUser);
                             return req;
                         });
 
+                joinRequest.setRequester(currentUser);
+                joinRequest.setTargetUser(targetUser);
                 joinRequest.setStatus(GroupJoinRequestStatus.PENDING);
                 joinRequest.setReviewedAt(null);
                 joinRequest.setReviewedByUserId(null);
@@ -848,15 +851,7 @@ public class RoomServiceImpl implements RoomService {
             );
         }
 
-        var joinRequest = groupJoinRequestRepository
-                .findByRoom_IdAndRequester_Id(room.getId(), currentUser.getId())
-                .orElseGet(() -> {
-                    var req = new GroupJoinRequest();
-                    req.setRoom(room);
-                    req.setRequester(currentUser);
-                    req.setStatus(GroupJoinRequestStatus.PENDING);
-                    return req;
-                });
+        var joinRequest = findOrCreateSelfJoinRequest(room, currentUser);
 
         joinRequest.setStatus(GroupJoinRequestStatus.PENDING);
         joinRequest.setReviewedAt(null);
@@ -905,18 +900,19 @@ public class RoomServiceImpl implements RoomService {
         }
 
         User requester = joinRequest.getRequester();
+        User targetUser = joinRequest.getTargetUser() != null ? joinRequest.getTargetUser() : requester;
         if (Boolean.TRUE.equals(request.getApproved())) {
-            addParticipant(room, requester.getId());
+            addParticipant(room, targetUser.getId());
             joinRequest.setStatus(GroupJoinRequestStatus.APPROVED);
 
             var members = roomParticipantRepository.findByRoom_Id(room.getId());
-            String content = currentUser.getName() + " đã duyệt " + requester.getName() + " vào nhóm";
+            String content = currentUser.getName() + " đã duyệt " + targetUser.getName() + " vào nhóm";
             var sysMsg = messageService.createSystemMessage(room, content, currentUser);
             eventPublisher.publishEvent(
                     new RoomMemberAddedEvent(
                             room,
                             members,
-                            requester.getId(),
+                            targetUser.getId(),
                             currentUser.getId(),
                             sysMsg
                     )
@@ -937,9 +933,7 @@ public class RoomServiceImpl implements RoomService {
         var currentUser = currentUserProvider.get();
         var room = getGroupRoom(roomId);
 
-        var joinRequest = groupJoinRequestRepository
-                .findByRoom_IdAndRequester_Id(room.getId(), currentUser.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Bạn chưa gửi yêu cầu tham gia nhóm này"));
+        var joinRequest = findSelfJoinRequest(room, currentUser.getId());
 
         if (joinRequest.getStatus() != GroupJoinRequestStatus.PENDING) {
             throw new IllegalArgumentException("Chỉ có thể thu hồi yêu cầu đang chờ duyệt");
@@ -1087,12 +1081,16 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private GroupJoinRequestResponse toGroupJoinRequestResponse(GroupJoinRequest request) {
+        User targetUser = request.getTargetUser() != null ? request.getTargetUser() : request.getRequester();
         return new GroupJoinRequestResponse(
                 request.getId(),
                 request.getRoom().getId(),
                 request.getRequester().getId(),
                 request.getRequester().getName(),
                 request.getRequester().getAvatarUrl(),
+                targetUser.getId(),
+                targetUser.getName(),
+                targetUser.getAvatarUrl(),
                 request.getStatus(),
                 request.getReviewedByUserId(),
                 request.getReviewedAt(),
@@ -1100,10 +1098,29 @@ public class RoomServiceImpl implements RoomService {
         );
     }
 
+    private GroupJoinRequest findOrCreateSelfJoinRequest(Room room, User currentUser) {
+        return groupJoinRequestRepository
+                .findByRoom_IdAndRequester_IdAndTargetUser_Id(room.getId(), currentUser.getId(), currentUser.getId())
+                .or(() -> groupJoinRequestRepository.findAllByRoom_IdAndRequester_Id(room.getId(), currentUser.getId()).stream()
+                        .filter(existing -> existing.getTargetUser() == null || existing.getTargetUser().getId().equals(currentUser.getId()))
+                        .findFirst())
+                .orElseGet(() -> {
+                    var req = new GroupJoinRequest();
+                    req.setRoom(room);
+                    req.setRequester(currentUser);
+                    req.setTargetUser(currentUser);
+                    req.setStatus(GroupJoinRequestStatus.PENDING);
+                    return req;
+                });
+    }
+
+    private GroupJoinRequest findSelfJoinRequest(Room room, Long userId) {
+        return groupJoinRequestRepository
+                .findByRoom_IdAndRequester_IdAndTargetUser_Id(room.getId(), userId, userId)
+                .or(() -> groupJoinRequestRepository.findAllByRoom_IdAndRequester_Id(room.getId(), userId).stream()
+                        .filter(existing -> existing.getTargetUser() == null || existing.getTargetUser().getId().equals(userId))
+                        .findFirst())
+                .orElseThrow(() -> new IllegalArgumentException("Bạn chưa gửi yêu cầu tham gia nhóm này"));
+    }
+
 }
-
-
-
-
-
-

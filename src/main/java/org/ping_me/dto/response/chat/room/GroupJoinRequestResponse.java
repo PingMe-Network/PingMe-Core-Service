@@ -16,6 +16,9 @@ public class GroupJoinRequestResponse {
     private Long requesterId;
     private String requesterName;
     private String requesterAvatarUrl;
+    private Long targetUserId;
+    private String targetUserName;
+    private String targetUserAvatarUrl;
     private GroupJoinRequestStatus status;
     private Long reviewedByUserId;
     private LocalDateTime reviewedAt;
