@@ -168,7 +168,7 @@ public class RoomController {
             @PathVariable Long roomId
     ) {
         roomService.dissolveGroup(roomId);
-        return ResponseEntity.ok(new ApiResponse<>((Void) null));
+        return ResponseEntity.ok(new ApiResponse<>(null));
     }
 
     @Operation(
@@ -221,8 +221,8 @@ public class RoomController {
     }
 
     @Operation(
-            summary = "Láº¥y cÃ i Ä‘áº·t quÃ¡n lÃ½ nhÃ³m",
-            description = "Tráº£ vá» cÃ¡c toggle phÃ¢n quyá»n/cÃ i Ä‘áº·t hiá»‡n táº¡i cá»§a nhÃ³m"
+            summary = "Lấy cài đặt quản lý nhóm",
+            description = "Trả về các toggle phân quyền/cài đặt hiện tại của nhóm"
     )
     @GetMapping("/group/{roomId}/settings")
     public ResponseEntity<ApiResponse<GroupSettingsResponse>> getGroupSettings(
@@ -232,8 +232,8 @@ public class RoomController {
     }
 
     @Operation(
-            summary = "Cáº­p nháº­t cÃ i Ä‘áº·t quÃ¡n lÃ½ nhÃ³m",
-            description = "Owner/Admin cÃ³ thá»ƒ báº­t/táº¯t cÃ¡c quyá»n thÃ nh viÃªn vÃ  quy táº¯c nhÃ³m"
+            summary = "Cập nhật cài đặt quản lý nhóm",
+            description = "Owner/Admin có thể bật/tắt các quyền thành viên và quy tắc nhóm"
     )
     @PatchMapping("/group/{roomId}/settings")
     public ResponseEntity<ApiResponse<GroupSettingsResponse>> updateGroupSettings(
@@ -244,8 +244,8 @@ public class RoomController {
     }
 
     @Operation(
-            summary = "Táº¡o láº¡i link tham gia nhÃ³m",
-            description = "Regenerate token link nhÃ³m, vÃ´ hiá»‡u hÃ³a link cÅ©"
+            summary = "Tạo lại link tham gia nhóm",
+            description = "Regenerate token link nhóm, vô hiệu hóa link cũ"
     )
     @PostMapping("/group/{roomId}/settings/join-link/regenerate")
     public ResponseEntity<ApiResponse<GroupSettingsResponse>> regenerateGroupJoinLink(
