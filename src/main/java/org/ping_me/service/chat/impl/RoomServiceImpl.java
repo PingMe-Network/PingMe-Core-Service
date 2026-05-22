@@ -5,15 +5,27 @@ import org.ping_me.config.s3.S3Service;
 import org.ping_me.dto.request.chat.room.AddGroupMembersRequest;
 import org.ping_me.dto.request.chat.room.CreateGroupRoomRequest;
 import org.ping_me.dto.request.chat.room.CreateOrGetDirectRoomRequest;
+import org.ping_me.dto.request.chat.room.JoinGroupByLinkRequest;
 import org.ping_me.dto.request.chat.room.LeaveGroupRequest;
+import org.ping_me.dto.request.chat.room.ReviewGroupJoinRequest;
+import org.ping_me.dto.request.chat.room.UpdateGroupSettingsRequest;
+import org.ping_me.dto.response.chat.room.GroupJoinRequestResponse;
+import org.ping_me.dto.response.chat.room.GroupSettingsResponse;
+import org.ping_me.dto.response.chat.room.JoinGroupByLinkResponse;
 import org.ping_me.dto.response.chat.room.RoomResponse;
+import org.ping_me.model.User;
+import org.ping_me.model.chat.GroupJoinRequest;
+import org.ping_me.model.chat.GroupSettings;
 import org.ping_me.model.chat.Room;
 import org.ping_me.model.chat.RoomParticipant;
 import org.ping_me.model.common.RoomMemberId;
+import org.ping_me.model.constant.GroupJoinRequestStatus;
 import org.ping_me.model.constant.RoomRole;
 import org.ping_me.model.constant.RoomType;
 import org.ping_me.repository.jpa.auth.UserRepository;
 import org.ping_me.repository.jpa.chat.DeletedMessageRepository;
+import org.ping_me.repository.jpa.chat.GroupJoinRequestRepository;
+import org.ping_me.repository.jpa.chat.GroupSettingsRepository;
 import org.ping_me.repository.jpa.chat.RoomParticipantRepository;
 import org.ping_me.repository.jpa.chat.RoomRepository;
 import org.ping_me.service.chat.MessageService;
@@ -30,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +55,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class RoomServiceImpl implements RoomService {
+public class    RoomServiceImpl implements RoomService {
 
     // SERVICE
     private final MessageService messageService;
@@ -55,6 +68,8 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final DeletedMessageRepository deletedMessageRepository;
+    private final GroupJoinRequestRepository groupJoinRequestRepository;
+    private final GroupSettingsRepository groupSettingsRepository;
     private final UserRepository userRepository;
 
     // PUBLISHER
@@ -165,6 +180,7 @@ public class RoomServiceImpl implements RoomService {
 
         // Thêm các thành viên khác
         memberIds.forEach(userId -> addParticipant(savedRoom, userId));
+        groupSettingsRepository.save(defaultGroupSettings(savedRoom));
 
         // Websocket
         eventPublisher.publishEvent(
@@ -192,7 +208,14 @@ public class RoomServiceImpl implements RoomService {
         // MEMBER không có quyền thêm thành viên mới
         // --------------------------------------------------------------------------------
         var caller = getParticipant(room.getId(), currentUser.getId(), "Bạn không thuộc phòng");
-        requireOwnerOrAdmin(caller, "Bạn không có quyền thêm thành viên");
+
+        var settings = loadOrCreateGroupSettings(room);
+        boolean memberCanOnlyRequest = caller.getRole() == RoomRole.MEMBER
+                && Boolean.TRUE.equals(settings.getJoinApprovalEnabled());
+
+        if (caller.getRole() == RoomRole.MEMBER && !memberCanOnlyRequest) {
+            throw new IllegalArgumentException("Bạn không có quyền thêm thành viên");
+        }
         // --------------------------------------------------------------------------------
 
         // Lọc thành viên không tồn tại
@@ -202,6 +225,45 @@ public class RoomServiceImpl implements RoomService {
 
         if (!invalidIds.isEmpty())
             throw new IllegalArgumentException("Người dùng không tồn tại: " + invalidIds);
+
+        if (memberCanOnlyRequest) {
+            var members = roomParticipantRepository.findByRoom_Id(room.getId());
+
+            for (Long targetUserId : request.getMemberIds()) {
+                var targetPk = new RoomMemberId(room.getId(), targetUserId);
+                if (roomParticipantRepository.existsById(targetPk)) continue;
+
+                var targetUser = userRepository.getReferenceById(targetUserId);
+                var joinRequest = groupJoinRequestRepository
+                        .findByRoom_IdAndRequester_IdAndTargetUser_Id(room.getId(), currentUser.getId(), targetUserId)
+                        .orElseGet(() -> {
+                            var req = new GroupJoinRequest();
+                            req.setRoom(room);
+                            req.setRequester(currentUser);
+                            req.setTargetUser(targetUser);
+                            return req;
+                        });
+
+                joinRequest.setRequester(currentUser);
+                joinRequest.setTargetUser(targetUser);
+                joinRequest.setStatus(GroupJoinRequestStatus.PENDING);
+                joinRequest.setReviewedAt(null);
+                joinRequest.setReviewedByUserId(null);
+                groupJoinRequestRepository.save(joinRequest);
+
+                String content = currentUser.getName() +
+                        " đã gửi yêu cầu thêm " +
+                        targetUser.getName() +
+                        " vào nhóm (chờ duyệt)";
+                var sysMsg = messageService.createSystemMessage(room, content, currentUser);
+                eventPublisher.publishEvent(new RoomUpdatedEvent(room, members, sysMsg));
+            }
+
+            return chatMapper.toRoomResponseDto(
+                    room,
+                    roomParticipantRepository.findByRoom_Id(room.getId())
+            );
+        }
 
         // Duyệt qua danh sách thêm thành viên vào Room
         for (Long targetUserId : request.getMemberIds()) {
@@ -218,7 +280,7 @@ public class RoomServiceImpl implements RoomService {
 
             // --------------------------------------------------------------------------------
             // Websocket
-            // + Bắn sự kiện tạo SYSTEM MESSAGGE
+            // + Bắn sự kiện tạo SYSTEM MESSAGE
             // + Bắn sự kiện cập nhật phòng
             // --------------------------------------------------------------------------------
             var sysMsg = messageService.createSystemMessage(room, content, currentUser);
@@ -247,7 +309,7 @@ public class RoomServiceImpl implements RoomService {
         var room = getGroupRoom(roomId);
 
         if (currentUser.getId().equals(targetUserId))
-            throw new IllegalArgumentException("Không thể tự xóa chính mình này");
+            throw new IllegalArgumentException("Không thể tự xóa chính mình");
 
         var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc phòng");
         var target = getParticipant(roomId, targetUserId, "Người dùng không thuộc phòng");
@@ -269,7 +331,7 @@ public class RoomServiceImpl implements RoomService {
 
         // --------------------------------------------------------------------------------
         // Websocket
-        // + Bắn sự kiện tạo SYSTEM MESSAGGE
+        // + Bắn sự kiện tạo SYSTEM MESSAGE
         // + Bắn sự kiện cập nhật phòng
         // --------------------------------------------------------------------------------
         String content = currentUser.getName() +
@@ -447,12 +509,13 @@ public class RoomServiceImpl implements RoomService {
         var currentUser = currentUserProvider.get();
 
         var room = getGroupRoom(roomId);
+        var settings = loadOrCreateGroupSettings(room);
 
         // --------------------------
         // Kiểm tra role
         // --------------------------
         var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
-        requireOwnerOrAdmin(caller, "Bạn không có quyền đổi tên nhóm");
+        requireCanEditGroupProfile(caller, settings, "Bạn không có quyền đổi tên nhóm");
 
         // --------------------------
         // Update tên nhóm
@@ -489,9 +552,10 @@ public class RoomServiceImpl implements RoomService {
         var currentUser = currentUserProvider.get();
 
         var room = getGroupRoom(roomId);
+        var settings = loadOrCreateGroupSettings(room);
 
         var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
-        requireOwnerOrAdmin(caller, "Bạn không có quyền đổi ảnh nhóm");
+        requireCanEditGroupProfile(caller, settings, "Bạn không có quyền đổi ảnh nhóm");
 
         var members = roomParticipantRepository.findByRoom_Id(roomId);
 
@@ -652,6 +716,237 @@ public class RoomServiceImpl implements RoomService {
         return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
+    @Override
+    public GroupSettingsResponse getGroupSettings(Long roomId) {
+        var currentUser = currentUserProvider.get();
+        getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
+        return toGroupSettingsResponse(loadOrCreateGroupSettings(getGroupRoom(roomId)));
+    }
+
+    @Override
+    public GroupSettingsResponse updateGroupSettings(Long roomId, UpdateGroupSettingsRequest request) {
+        var currentUser = currentUserProvider.get();
+        var room = getGroupRoom(roomId);
+        var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
+        requireOwnerOrAdmin(caller, "Bạn không có quyền cập nhật cài đặt nhóm");
+
+        var settings = loadOrCreateGroupSettings(room);
+        var changedMessages = new ArrayList<String>();
+
+        if (request.getAllowMemberEditGroupProfile() != null
+                && !request.getAllowMemberEditGroupProfile().equals(settings.getAllowMemberEditGroupProfile())) {
+            settings.setAllowMemberEditGroupProfile(request.getAllowMemberEditGroupProfile());
+            changedMessages.add("quyền đổi tên và ảnh đại diện nhóm cho thành viên");
+        }
+        if (request.getAllowMemberPinMessage() != null
+                && !request.getAllowMemberPinMessage().equals(settings.getAllowMemberPinMessage())) {
+            settings.setAllowMemberPinMessage(request.getAllowMemberPinMessage());
+            changedMessages.add("quyền ghim tin nhắn cho thành viên");
+        }
+        if (request.getAllowMemberCreatePoll() != null
+                && !request.getAllowMemberCreatePoll().equals(settings.getAllowMemberCreatePoll())) {
+            settings.setAllowMemberCreatePoll(request.getAllowMemberCreatePoll());
+            changedMessages.add("quyền tạo bình chọn cho thành viên");
+        }
+        if (request.getAllowMemberSendMessage() != null
+                && !request.getAllowMemberSendMessage().equals(settings.getAllowMemberSendMessage())) {
+            settings.setAllowMemberSendMessage(request.getAllowMemberSendMessage());
+            changedMessages.add("quyền gửi tin nhắn cho thành viên");
+        }
+        if (request.getJoinApprovalEnabled() != null
+                && !request.getJoinApprovalEnabled().equals(settings.getJoinApprovalEnabled())) {
+            settings.setJoinApprovalEnabled(request.getJoinApprovalEnabled());
+            changedMessages.add("chế độ phê duyệt thành viên mới");
+        }
+        if (request.getHighlightAdminMessageOnly() != null
+                && !request.getHighlightAdminMessageOnly().equals(settings.getHighlightAdminMessageOnly())) {
+            settings.setHighlightAdminMessageOnly(request.getHighlightAdminMessageOnly());
+            changedMessages.add("đánh dấu tin nhắn từ trưởng/phó nhóm");
+        }
+        if (request.getAllowNewMemberReadRecent() != null
+                && !request.getAllowNewMemberReadRecent().equals(settings.getAllowNewMemberReadRecent())) {
+            settings.setAllowNewMemberReadRecent(request.getAllowNewMemberReadRecent());
+            changedMessages.add("quyền đọc tin nhắn gần nhất cho thành viên mới");
+        }
+        if (request.getJoinLinkEnabled() != null
+                && !request.getJoinLinkEnabled().equals(settings.getJoinLinkEnabled())) {
+            settings.setJoinLinkEnabled(request.getJoinLinkEnabled());
+            changedMessages.add("trạng thái link tham gia nhóm");
+        }
+
+        groupSettingsRepository.save(settings);
+
+        if (!changedMessages.isEmpty()) {
+            var members = roomParticipantRepository.findByRoom_Id(room.getId());
+            for (String changedItem : changedMessages) {
+                String content = currentUser.getName() + " đã cập nhật " + changedItem;
+                var sysMsg = messageService.createSystemMessage(room, content, currentUser);
+                eventPublisher.publishEvent(new RoomUpdatedEvent(room, members, sysMsg));
+            }
+        }
+
+        return toGroupSettingsResponse(settings);
+    }
+
+    @Override
+    public GroupSettingsResponse regenerateGroupJoinLink(Long roomId) {
+        var currentUser = currentUserProvider.get();
+        var room = getGroupRoom(roomId);
+        var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
+        requireOwnerOrAdmin(caller, "Bạn không có quyền tạo lại link nhóm");
+
+        var settings = loadOrCreateGroupSettings(room);
+        settings.setJoinLinkToken(generateJoinLinkToken());
+        settings.setJoinLinkEnabled(true);
+
+        groupSettingsRepository.save(settings);
+        return toGroupSettingsResponse(settings);
+    }
+
+    @Override
+    public JoinGroupByLinkResponse joinGroupByLink(JoinGroupByLinkRequest request) {
+        var currentUser = currentUserProvider.get();
+        var settings = groupSettingsRepository.findByJoinLinkToken(request.getJoinLinkToken())
+                .orElseThrow(() -> new IllegalArgumentException("Link tham gia nhóm không hợp lệ"));
+        var room = getGroupRoom(settings.getRoomId());
+
+        if (!Boolean.TRUE.equals(settings.getJoinLinkEnabled())) {
+            throw new IllegalArgumentException("Link tham gia nhóm đã bị tắt");
+        }
+
+        var pk = new RoomMemberId(room.getId(), currentUser.getId());
+        if (roomParticipantRepository.existsById(pk)) {
+            return new JoinGroupByLinkResponse(
+                    true,
+                    "Bạn đã là thành viên của nhóm",
+                    chatMapper.toRoomResponseDto(room, roomParticipantRepository.findByRoom_Id(room.getId())),
+                    null
+            );
+        }
+
+        if (!Boolean.TRUE.equals(settings.getJoinApprovalEnabled())) {
+            addParticipant(room, currentUser.getId());
+            var members = roomParticipantRepository.findByRoom_Id(room.getId());
+            var sysMsg = messageService.createSystemMessage(
+                    room,
+                    currentUser.getName() + " đã tham gia nhóm bằng link",
+                    currentUser
+            );
+
+            eventPublisher.publishEvent(
+                    new RoomMemberAddedEvent(
+                            room,
+                            members,
+                            currentUser.getId(),
+                            currentUser.getId(),
+                            sysMsg
+                    )
+            );
+
+            return new JoinGroupByLinkResponse(
+                    true,
+                    "Tham gia nhóm thành công",
+                    chatMapper.toRoomResponseDto(room, members),
+                    null
+            );
+        }
+
+        var joinRequest = findOrCreateSelfJoinRequest(room, currentUser);
+
+        joinRequest.setStatus(GroupJoinRequestStatus.PENDING);
+        joinRequest.setReviewedAt(null);
+        joinRequest.setReviewedByUserId(null);
+        joinRequest = groupJoinRequestRepository.save(joinRequest);
+
+        return new JoinGroupByLinkResponse(
+                false,
+                "Yêu cầu tham gia nhóm đã được gửi, vui lòng chờ duyệt",
+                null,
+                toGroupJoinRequestResponse(joinRequest)
+        );
+    }
+
+    @Override
+    public List<GroupJoinRequestResponse> getGroupJoinRequests(Long roomId, GroupJoinRequestStatus status) {
+        var currentUser = currentUserProvider.get();
+        var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
+        requireOwnerOrAdmin(caller, "Bạn không có quyền xem yêu cầu vào nhóm");
+
+        List<GroupJoinRequest> requests = status == null
+                ? groupJoinRequestRepository.findByRoom_IdOrderByCreatedAtDesc(roomId)
+                : groupJoinRequestRepository.findByRoom_IdAndStatusOrderByCreatedAtDesc(roomId, status);
+
+        return requests.stream()
+                .map(this::toGroupJoinRequestResponse)
+                .toList();
+    }
+
+    @Override
+    public GroupJoinRequestResponse reviewGroupJoinRequest(Long roomId, Long joinRequestId, ReviewGroupJoinRequest request) {
+        var currentUser = currentUserProvider.get();
+        var room = getGroupRoom(roomId);
+        var caller = getParticipant(roomId, currentUser.getId(), "Bạn không thuộc nhóm");
+        requireOwnerOrAdmin(caller, "Bạn không có quyền duyệt thành viên");
+
+        var joinRequest = groupJoinRequestRepository.findById(joinRequestId)
+                .orElseThrow(() -> new IllegalArgumentException("Yêu cầu tham gia không tồn tại"));
+
+        if (!joinRequest.getRoom().getId().equals(roomId)) {
+            throw new IllegalArgumentException("Yêu cầu tham gia không thuộc nhóm này");
+        }
+
+        if (joinRequest.getStatus() != GroupJoinRequestStatus.PENDING) {
+            throw new IllegalArgumentException("Yêu cầu tham gia đã được xử lý");
+        }
+
+        User requester = joinRequest.getRequester();
+        User targetUser = joinRequest.getTargetUser() != null ? joinRequest.getTargetUser() : requester;
+        if (Boolean.TRUE.equals(request.getApproved())) {
+            addParticipant(room, targetUser.getId());
+            joinRequest.setStatus(GroupJoinRequestStatus.APPROVED);
+
+            var members = roomParticipantRepository.findByRoom_Id(room.getId());
+            String content = currentUser.getName() + " đã duyệt " + targetUser.getName() + " vào nhóm";
+            var sysMsg = messageService.createSystemMessage(room, content, currentUser);
+            eventPublisher.publishEvent(
+                    new RoomMemberAddedEvent(
+                            room,
+                            members,
+                            targetUser.getId(),
+                            currentUser.getId(),
+                            sysMsg
+                    )
+            );
+        } else {
+            joinRequest.setStatus(GroupJoinRequestStatus.REJECTED);
+        }
+
+        joinRequest.setReviewedByUserId(currentUser.getId());
+        joinRequest.setReviewedAt(java.time.LocalDateTime.now());
+        joinRequest = groupJoinRequestRepository.save(joinRequest);
+
+        return toGroupJoinRequestResponse(joinRequest);
+    }
+
+    @Override
+    public GroupJoinRequestResponse cancelMyGroupJoinRequest(Long roomId) {
+        var currentUser = currentUserProvider.get();
+        var room = getGroupRoom(roomId);
+
+        var joinRequest = findSelfJoinRequest(room, currentUser.getId());
+
+        if (joinRequest.getStatus() != GroupJoinRequestStatus.PENDING) {
+            throw new IllegalArgumentException("Chỉ có thể thu hồi yêu cầu đang chờ duyệt");
+        }
+
+        joinRequest.setStatus(GroupJoinRequestStatus.CANCELED);
+        joinRequest.setReviewedByUserId(currentUser.getId());
+        joinRequest.setReviewedAt(java.time.LocalDateTime.now());
+        joinRequest = groupJoinRequestRepository.save(joinRequest);
+
+        return toGroupJoinRequestResponse(joinRequest);
+    }
+
     /* ========================================================================== */
     /*                           CÁC HÀM HỖ TRỢ KHÁC                              */
     /* ========================================================================== */
@@ -703,6 +998,13 @@ public class RoomServiceImpl implements RoomService {
             throw new IllegalArgumentException("Admin chỉ được xóa Member");
     }
 
+    private void requireCanEditGroupProfile(RoomParticipant caller, GroupSettings settings, String errorMessage) {
+        if (caller.getRole() == RoomRole.MEMBER
+                && !Boolean.TRUE.equals(settings.getAllowMemberEditGroupProfile())) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+    }
+
     private void addParticipant(Room room, Long userId) {
         RoomMemberId pk = new RoomMemberId(room.getId(), userId);
         if (roomParticipantRepository.existsById(pk)) return;
@@ -724,6 +1026,7 @@ public class RoomServiceImpl implements RoomService {
         Long roomId = room.getId();
         // "Delete for me" records keep FK(room_id -> rooms.id). Must clean them first.
         deletedMessageRepository.deleteByIdRoomId(roomId);
+        groupSettingsRepository.deleteById(roomId);
         roomParticipantRepository.deleteAll(participants);
         roomRepository.delete(room);
 
@@ -732,6 +1035,92 @@ public class RoomServiceImpl implements RoomService {
                 participants,
                 actorUserId
         ));
+    }
+
+    private GroupSettings loadOrCreateGroupSettings(Room room) {
+        return groupSettingsRepository.findByRoomId(room.getId())
+                .orElseGet(() -> groupSettingsRepository.save(defaultGroupSettings(room)));
+    }
+
+    private GroupSettings defaultGroupSettings(Room room) {
+        var settings = new GroupSettings();
+        settings.setRoomId(room.getId());
+        settings.setAllowMemberEditGroupProfile(false);
+        settings.setAllowMemberPinMessage(false);
+        settings.setAllowMemberCreatePoll(false);
+        settings.setAllowMemberSendMessage(true);
+        settings.setJoinApprovalEnabled(false);
+        settings.setHighlightAdminMessageOnly(false);
+        settings.setAllowNewMemberReadRecent(true);
+        settings.setJoinLinkEnabled(true);
+        settings.setJoinLinkToken(generateJoinLinkToken());
+        return settings;
+    }
+
+    private String generateJoinLinkToken() {
+        return UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private GroupSettingsResponse toGroupSettingsResponse(GroupSettings settings) {
+        String joinLink = Boolean.TRUE.equals(settings.getJoinLinkEnabled())
+                ? "pingme.me/g/" + settings.getJoinLinkToken()
+                : null;
+
+        return new GroupSettingsResponse(
+                settings.getRoomId(),
+                settings.getAllowMemberEditGroupProfile(),
+                settings.getAllowMemberPinMessage(),
+                settings.getAllowMemberCreatePoll(),
+                settings.getAllowMemberSendMessage(),
+                settings.getJoinApprovalEnabled(),
+                settings.getHighlightAdminMessageOnly(),
+                settings.getAllowNewMemberReadRecent(),
+                settings.getJoinLinkEnabled(),
+                joinLink
+        );
+    }
+
+    private GroupJoinRequestResponse toGroupJoinRequestResponse(GroupJoinRequest request) {
+        User targetUser = request.getTargetUser() != null ? request.getTargetUser() : request.getRequester();
+        return new GroupJoinRequestResponse(
+                request.getId(),
+                request.getRoom().getId(),
+                request.getRequester().getId(),
+                request.getRequester().getName(),
+                request.getRequester().getAvatarUrl(),
+                targetUser.getId(),
+                targetUser.getName(),
+                targetUser.getAvatarUrl(),
+                request.getStatus(),
+                request.getReviewedByUserId(),
+                request.getReviewedAt(),
+                request.getCreatedAt()
+        );
+    }
+
+    private GroupJoinRequest findOrCreateSelfJoinRequest(Room room, User currentUser) {
+        return groupJoinRequestRepository
+                .findByRoom_IdAndRequester_IdAndTargetUser_Id(room.getId(), currentUser.getId(), currentUser.getId())
+                .or(() -> groupJoinRequestRepository.findAllByRoom_IdAndRequester_Id(room.getId(), currentUser.getId()).stream()
+                        .filter(existing -> existing.getTargetUser() == null || existing.getTargetUser().getId().equals(currentUser.getId()))
+                        .findFirst())
+                .orElseGet(() -> {
+                    var req = new GroupJoinRequest();
+                    req.setRoom(room);
+                    req.setRequester(currentUser);
+                    req.setTargetUser(currentUser);
+                    req.setStatus(GroupJoinRequestStatus.PENDING);
+                    return req;
+                });
+    }
+
+    private GroupJoinRequest findSelfJoinRequest(Room room, Long userId) {
+        return groupJoinRequestRepository
+                .findByRoom_IdAndRequester_IdAndTargetUser_Id(room.getId(), userId, userId)
+                .or(() -> groupJoinRequestRepository.findAllByRoom_IdAndRequester_Id(room.getId(), userId).stream()
+                        .filter(existing -> existing.getTargetUser() == null || existing.getTargetUser().getId().equals(userId))
+                        .findFirst())
+                .orElseThrow(() -> new IllegalArgumentException("Bạn chưa gửi yêu cầu tham gia nhóm này"));
     }
 
 }
