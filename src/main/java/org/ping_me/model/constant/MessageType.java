@@ -5,5 +5,5 @@ package org.ping_me.model.constant;
  *
  **/
 public enum MessageType {
-    TEXT, IMAGE, VIDEO, FILE, SYSTEM, WEATHER, POLL
+    TEXT, IMAGE, VIDEO, FILE, SYSTEM, WEATHER, POLL, NOTE, REMINDER
 }

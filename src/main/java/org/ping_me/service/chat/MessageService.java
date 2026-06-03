@@ -2,7 +2,9 @@ package org.ping_me.service.chat;
 
 import org.ping_me.dto.request.chat.message.ForwardMessageRequest;
 import org.ping_me.dto.request.chat.message.ForwardMessagesRequest;
+import org.ping_me.dto.request.chat.message.CreateNoteMessageRequest;
 import org.ping_me.dto.request.chat.message.CreatePollMessageRequest;
+import org.ping_me.dto.request.chat.message.CreateReminderMessageRequest;
 import org.ping_me.dto.request.chat.message.EditMessageRequest;
 import org.ping_me.dto.request.chat.message.MarkReadRequest;
 import org.ping_me.dto.request.chat.message.SendMessageRequest;
@@ -47,6 +49,10 @@ public interface MessageService {
     MessageResponse sendWeatherMessage(SendWeatherMessageRequest req);
 
     MessageResponse createPollMessage(CreatePollMessageRequest request);
+
+    MessageResponse createNoteMessage(CreateNoteMessageRequest request);
+
+    MessageResponse createReminderMessage(CreateReminderMessageRequest request);
 
     MessageResponse votePoll(String messageId, VotePollRequest request);
 

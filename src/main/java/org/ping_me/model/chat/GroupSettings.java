@@ -9,6 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.ping_me.model.common.BaseEntity;
 
 /**
@@ -32,6 +33,10 @@ public class GroupSettings extends BaseEntity {
 
     @Column(name = "allow_member_pin_message", nullable = false)
     private Boolean allowMemberPinMessage = false;
+
+    @Column(name = "allow_member_create_note", nullable = false)
+    @ColumnDefault("false")
+    private Boolean allowMemberCreateNote = false;
 
     @Column(name = "allow_member_create_poll", nullable = false)
     private Boolean allowMemberCreatePoll = false;

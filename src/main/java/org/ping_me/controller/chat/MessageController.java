@@ -9,7 +9,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ping_me.dto.base.ApiResponse;
+import org.ping_me.dto.request.chat.message.CreateNoteMessageRequest;
 import org.ping_me.dto.request.chat.message.CreatePollMessageRequest;
+import org.ping_me.dto.request.chat.message.CreateReminderMessageRequest;
 import org.ping_me.dto.request.chat.message.ForwardMessageRequest;
 import org.ping_me.dto.request.chat.message.ForwardMessagesRequest;
 import org.ping_me.dto.request.chat.message.EditMessageRequest;
@@ -160,6 +162,44 @@ public class    MessageController {
         return userLimiter.executeSupplier(() -> ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(messageService.createPollMessage(createPollMessageRequest)))
+        );
+    }
+
+    @Operation(
+            summary = "Tạo ghi chú",
+            description = "Tạo một tin nhắn ghi chú trong phòng chat"
+    )
+    @PostMapping("/notes")
+    public ResponseEntity<ApiResponse<MessageResponse>> createNoteMessage(
+            @Parameter(description = "Payload tạo ghi chú", required = true)
+            @RequestBody @Valid CreateNoteMessageRequest createNoteMessageRequest
+    ) {
+        Long userId = currentUserProvider.get().getId();
+        var userLimiter = rateLimiterRegistry
+                .rateLimiter("chatSending:" + userId, CHAT_SENDING_RATE_LIMITER_KEY);
+
+        return userLimiter.executeSupplier(() -> ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(messageService.createNoteMessage(createNoteMessageRequest)))
+        );
+    }
+
+    @Operation(
+            summary = "Tạo nhắc hẹn",
+            description = "Tạo một tin nhắn nhắc hẹn trong phòng chat"
+    )
+    @PostMapping("/reminders")
+    public ResponseEntity<ApiResponse<MessageResponse>> createReminderMessage(
+            @Parameter(description = "Payload tạo nhắc hẹn", required = true)
+            @RequestBody @Valid CreateReminderMessageRequest createReminderMessageRequest
+    ) {
+        Long userId = currentUserProvider.get().getId();
+        var userLimiter = rateLimiterRegistry
+                .rateLimiter("chatSending:" + userId, CHAT_SENDING_RATE_LIMITER_KEY);
+
+        return userLimiter.executeSupplier(() -> ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(messageService.createReminderMessage(createReminderMessageRequest)))
         );
     }
 

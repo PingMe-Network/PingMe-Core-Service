@@ -9,6 +9,7 @@ import lombok.Data;
 public class UpdateGroupSettingsRequest {
     private Boolean allowMemberEditGroupProfile;
     private Boolean allowMemberPinMessage;
+    private Boolean allowMemberCreateNote;
     private Boolean allowMemberCreatePoll;
     private Boolean allowMemberSendMessage;
     private Boolean joinApprovalEnabled;

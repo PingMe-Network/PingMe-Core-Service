@@ -7,7 +7,9 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.ping_me.config.s3.S3Service;
 import org.ping_me.dto.event.UserChatEvent;
+import org.ping_me.dto.request.chat.message.CreateNoteMessageRequest;
 import org.ping_me.dto.request.chat.message.CreatePollMessageRequest;
+import org.ping_me.dto.request.chat.message.CreateReminderMessageRequest;
 import org.ping_me.dto.request.chat.message.ForwardMessageRequest;
 import org.ping_me.dto.request.chat.message.ForwardMessagesRequest;
 import org.ping_me.dto.request.chat.message.EditMessageRequest;
@@ -23,6 +25,8 @@ import org.ping_me.dto.response.chat.message.MessageResponse;
 import org.ping_me.dto.response.chat.message.ReadStateResponse;
 import org.ping_me.dto.response.weather.WeatherResponse;
 import org.ping_me.model.User;
+import org.ping_me.model.chat.ChatNote;
+import org.ping_me.model.chat.ChatReminder;
 import org.ping_me.model.chat.DeletedMessage;
 import org.ping_me.model.chat.GroupSettings;
 import org.ping_me.model.chat.Message;
@@ -33,8 +37,11 @@ import org.ping_me.model.chat.RoomParticipant;
 import org.ping_me.model.common.DeletedMessageId;
 import org.ping_me.model.common.RoomMemberId;
 import org.ping_me.model.constant.MessageType;
+import org.ping_me.model.constant.ReminderStatus;
 import org.ping_me.model.constant.RoomRole;
 import org.ping_me.model.constant.RoomType;
+import org.ping_me.repository.jpa.chat.ChatNoteRepository;
+import org.ping_me.repository.jpa.chat.ChatReminderRepository;
 import org.ping_me.repository.jpa.chat.DeletedMessageRepository;
 import org.ping_me.repository.jpa.chat.GroupSettingsRepository;
 import org.ping_me.repository.jpa.chat.RoomParticipantRepository;
@@ -96,6 +103,8 @@ public class MessageServiceImpl implements MessageService {
     private final RoomParticipantRepository roomParticipantRepository;
     private final DeletedMessageRepository deletedMessageRepository;
     private final GroupSettingsRepository groupSettingsRepository;
+    private final ChatNoteRepository chatNoteRepository;
+    private final ChatReminderRepository chatReminderRepository;
     private final MessageRepository messageRepository;
 
     // PUBLISHER
@@ -153,6 +162,9 @@ public class MessageServiceImpl implements MessageService {
 
         if (sendMessageRequest.getType() == MessageType.POLL) {
             throw new IllegalArgumentException("Vui lòng dùng API tạo bình chọn");
+        }
+        if (sendMessageRequest.getType() == MessageType.NOTE || sendMessageRequest.getType() == MessageType.REMINDER) {
+            throw new IllegalArgumentException("Vui lòng dùng API tạo ghi chú, nhắc hẹn");
         }
 
         // Nếu file này một dạng file thì
@@ -459,6 +471,104 @@ public class MessageServiceImpl implements MessageService {
 
             publishUserChatAudit(currentUser, request.getQuestion());
             return dto;
+        } catch (RuntimeException ex) {
+            messageRepository.deleteById(message.getId());
+            throw ex;
+        }
+    }
+
+    @Override
+    public MessageResponse createNoteMessage(CreateNoteMessageRequest request) {
+        var currentUser = currentUserProvider.get();
+        var senderId = currentUser.getId();
+        var roomId = request.getRoomId();
+
+        UUID clientMsgId = parseClientMsgId(request.getClientMsgId());
+
+        Room room = roomRepository
+                .findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Phòng chat này không tồn tại"));
+        RoomParticipant roomParticipant = validateRoomMember(roomId, senderId);
+        requireCanCreateNote(room, roomParticipant);
+        validateReplyMessage(request.getRepliedMessageId(), roomId);
+
+        String title = request.getTitle().trim();
+        String body = request.getBody().trim();
+
+        var existed = messageRepository
+                .findByRoomIdAndSenderIdAndClientMsgId(roomId, senderId, clientMsgId)
+                .orElse(null);
+        if (existed != null) return chatMapper.toMessageResponseDto(existed);
+
+        Message message = buildSpecialMessage(roomId, senderId, MessageType.NOTE, title, request.getRepliedMessageId(), clientMsgId);
+        applyPinOnCreate(message, request.getPinToTop(), senderId);
+        message = saveMessageIdempotently(message, roomId, senderId, clientMsgId);
+
+        try {
+            ChatNote note = new ChatNote();
+            note.setMessageId(message.getId());
+            note.setRoom(room);
+            note.setCreatedByUser(currentUser);
+            note.setTitle(title);
+            note.setBody(body);
+            chatNoteRepository.save(note);
+
+            return publishCreatedMessage(room, roomParticipant, message, currentUser, "Ghi chú: " + title);
+        } catch (RuntimeException ex) {
+            messageRepository.deleteById(message.getId());
+            throw ex;
+        }
+    }
+
+    @Override
+    public MessageResponse createReminderMessage(CreateReminderMessageRequest request) {
+        var currentUser = currentUserProvider.get();
+        var senderId = currentUser.getId();
+        var roomId = request.getRoomId();
+
+        UUID clientMsgId = parseClientMsgId(request.getClientMsgId());
+
+        Room room = roomRepository
+                .findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Phòng chat này không tồn tại"));
+        RoomParticipant roomParticipant = validateRoomMember(roomId, senderId);
+        requireCanCreateNote(room, roomParticipant);
+        validateReplyMessage(request.getRepliedMessageId(), roomId);
+
+        if (request.getRemindAt() == null || !request.getRemindAt().isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Thời gian nhắc hẹn phải nằm trong tương lai");
+        }
+
+        String title = request.getTitle().trim();
+        String body = request.getBody().trim();
+        String timezone = request.getTimezone().trim();
+        String repeatRule = request.getRepeatRule() == null || request.getRepeatRule().isBlank()
+                ? "NONE"
+                : request.getRepeatRule().trim();
+
+        var existed = messageRepository
+                .findByRoomIdAndSenderIdAndClientMsgId(roomId, senderId, clientMsgId)
+                .orElse(null);
+        if (existed != null) return chatMapper.toMessageResponseDto(existed);
+
+        Message message = buildSpecialMessage(roomId, senderId, MessageType.REMINDER, title, request.getRepliedMessageId(), clientMsgId);
+        applyPinOnCreate(message, request.getPinToTop(), senderId);
+        message = saveMessageIdempotently(message, roomId, senderId, clientMsgId);
+
+        try {
+            ChatReminder reminder = new ChatReminder();
+            reminder.setMessageId(message.getId());
+            reminder.setRoom(room);
+            reminder.setCreatedByUser(currentUser);
+            reminder.setTitle(title);
+            reminder.setBody(body);
+            reminder.setRemindAt(request.getRemindAt());
+            reminder.setTimezone(timezone);
+            reminder.setRepeatRule(repeatRule);
+            reminder.setStatus(ReminderStatus.PENDING);
+            chatReminderRepository.save(reminder);
+
+            return publishCreatedMessage(room, roomParticipant, message, currentUser, "Nhắc hẹn: " + title);
         } catch (RuntimeException ex) {
             messageRepository.deleteById(message.getId());
             throw ex;
@@ -847,6 +957,9 @@ public class MessageServiceImpl implements MessageService {
         if (sourceMessage.getType() == MessageType.POLL) {
             throw new IllegalArgumentException("Không thể chuyển tiếp bình chọn");
         }
+        if (sourceMessage.getType() == MessageType.NOTE || sourceMessage.getType() == MessageType.REMINDER) {
+            throw new IllegalArgumentException("Không thể chuyển tiếp ghi chú, nhắc hẹn");
+        }
 
         var sourceMemberId = new RoomMemberId(sourceMessage.getRoomId(), senderId);
         if (!roomParticipantRepository.existsById(sourceMemberId)) {
@@ -883,6 +996,16 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
+    private void requireCanCreateNote(Room room, RoomParticipant participant) {
+        if (room.getRoomType() != RoomType.GROUP || participant.getRole() != RoomRole.MEMBER) {
+            return;
+        }
+        GroupSettings settings = groupSettingsRepository.findByRoomId(room.getId()).orElse(null);
+        if (settings != null && !Boolean.TRUE.equals(settings.getAllowMemberCreateNote())) {
+            throw new AccessDeniedException("Thành viên không được phép tạo ghi chú, nhắc hẹn trong nhóm này");
+        }
+    }
+
     private void requireCanPinMessage(Long roomId, Long userId) {
         Room room = roomRepository.findById(roomId).orElse(null);
         if (room == null || room.getRoomType() != RoomType.GROUP) {
@@ -906,6 +1029,74 @@ public class MessageServiceImpl implements MessageService {
         }
 
         eventPublisher.publishEvent(new MessageUpdatedEvent(message));
+        return dto;
+    }
+
+    private Message buildSpecialMessage(
+            Long roomId,
+            Long senderId,
+            MessageType type,
+            String content,
+            String repliedMessageId,
+            UUID clientMsgId
+    ) {
+        Message message = new Message();
+        message.setRoomId(roomId);
+        message.setSenderId(senderId);
+        message.setContent(content);
+        message.setType(type);
+        message.setRepliedMessageId(repliedMessageId);
+        message.setClientMsgId(clientMsgId);
+        message.setCreatedAt(LocalDateTime.now());
+        return message;
+    }
+
+    private Message saveMessageIdempotently(Message message, Long roomId, Long senderId, UUID clientMsgId) {
+        try {
+            return messageRepository.save(message);
+        } catch (DataIntegrityViolationException ex) {
+            return messageRepository
+                    .findByRoomIdAndSenderIdAndClientMsgId(roomId, senderId, clientMsgId)
+                    .orElseThrow(() -> ex);
+        }
+    }
+
+    private void applyPinOnCreate(Message message, Boolean pinToTop, Long senderId) {
+        if (!Boolean.TRUE.equals(pinToTop)) {
+            return;
+        }
+        message.setIsPinned(true);
+        message.setPinnedAt(message.getCreatedAt() == null ? LocalDateTime.now() : message.getCreatedAt());
+        message.setPinnedByUserId(senderId);
+    }
+
+    private MessageResponse publishCreatedMessage(
+            Room room,
+            RoomParticipant roomParticipant,
+            Message message,
+            User sender,
+            String auditText
+    ) {
+        room.setLastMessageId(message.getId());
+        room.setLastMessageAt(message.getCreatedAt());
+
+        roomParticipant.setLastReadMessageId(message.getId());
+        roomParticipant.setLastReadAt(message.getCreatedAt());
+
+        eventPublisher.publishEvent(new MessageCreatedEvent(message));
+        eventPublisher.publishEvent(new RoomUpdatedEvent(
+                room,
+                roomParticipantRepository.findByRoom_Id(room.getId()),
+                null
+        ));
+
+        var dto = chatMapper.toMessageResponseDto(message);
+
+        if (cacheEnabled) {
+            messageCachingService.cacheNewMessage(room.getId(), dto);
+        }
+
+        publishUserChatAudit(sender, auditText);
         return dto;
     }
 
@@ -1044,7 +1235,9 @@ public class MessageServiceImpl implements MessageService {
         if (message.getType() == MessageType.TEXT
                 || message.getType() == MessageType.SYSTEM
                 || message.getType() == MessageType.WEATHER
-                || message.getType() == MessageType.POLL) {
+                || message.getType() == MessageType.POLL
+                || message.getType() == MessageType.NOTE
+                || message.getType() == MessageType.REMINDER) {
             return;
         }
 
@@ -1420,6 +1613,12 @@ public class MessageServiceImpl implements MessageService {
                 return "Bình chọn: " + message.getPoll().getQuestion();
             }
             return "(Đã tạo bình chọn)";
+        }
+        if (message.getType() == MessageType.NOTE) {
+            return "Ghi chú: " + message.getContent();
+        }
+        if (message.getType() == MessageType.REMINDER) {
+            return "Nhắc hẹn: " + message.getContent();
         }
         return "(Tin nhắn không xác định)";
     }

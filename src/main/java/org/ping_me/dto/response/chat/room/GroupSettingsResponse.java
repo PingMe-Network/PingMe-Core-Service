@@ -11,6 +11,7 @@ public class GroupSettingsResponse {
     private Long roomId;
     private Boolean allowMemberEditGroupProfile;
     private Boolean allowMemberPinMessage;
+    private Boolean allowMemberCreateNote;
     private Boolean allowMemberCreatePoll;
     private Boolean allowMemberSendMessage;
     private Boolean joinApprovalEnabled;

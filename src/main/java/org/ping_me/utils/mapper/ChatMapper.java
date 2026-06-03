@@ -4,9 +4,13 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.ping_me.dto.response.chat.message.ForwardMetadataResponse;
 import org.ping_me.dto.response.chat.message.MessageResponse;
+import org.ping_me.dto.response.chat.message.NoteResponse;
 import org.ping_me.dto.response.chat.message.PollOptionResponse;
 import org.ping_me.dto.response.chat.message.PollResponse;
 import org.ping_me.dto.response.chat.message.RepliedMessageResponse;
+import org.ping_me.dto.response.chat.message.ReminderResponse;
+import org.ping_me.model.chat.ChatNote;
+import org.ping_me.model.chat.ChatReminder;
 import org.ping_me.dto.response.chat.room.RoomParticipantResponse;
 import org.ping_me.dto.response.chat.room.RoomResponse;
 import org.ping_me.model.chat.Message;
@@ -15,6 +19,8 @@ import org.ping_me.model.chat.PollOption;
 import org.ping_me.model.chat.Room;
 import org.ping_me.model.chat.RoomParticipant;
 import org.ping_me.model.constant.MessageType;
+import org.ping_me.repository.jpa.chat.ChatNoteRepository;
+import org.ping_me.repository.jpa.chat.ChatReminderRepository;
 import org.ping_me.repository.mongodb.chat.MessageRepository;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +36,8 @@ import java.util.List;
 public class ChatMapper {
 
     private final MessageRepository messageRepository;
+    private final ChatNoteRepository chatNoteRepository;
+    private final ChatReminderRepository chatReminderRepository;
 
     public MessageResponse toMessageResponseDto(Message message) {
 
@@ -66,7 +74,9 @@ public class ChatMapper {
                 message.isForwarded(),
                 forwardMetadata,
                 repliedMessage,
-                mapPoll(message.getPoll())
+                mapPoll(message.getPoll()),
+                mapNote(message),
+                mapReminder(message)
         );
     }
 
@@ -203,6 +213,55 @@ public class ChatMapper {
                 option.getText(),
                 voterIds.size(),
                 voterIds
+        );
+    }
+
+    private NoteResponse mapNote(Message message) {
+        if (message.getType() != MessageType.NOTE || message.getId() == null) {
+            return null;
+        }
+
+        return chatNoteRepository.findByMessageId(message.getId())
+                .map(this::mapNote)
+                .orElse(null);
+    }
+
+    private NoteResponse mapNote(ChatNote note) {
+        return new NoteResponse(
+                note.getId(),
+                note.getMessageId(),
+                note.getRoom().getId(),
+                note.getCreatedByUser().getId(),
+                note.getTitle(),
+                note.getBody()
+        );
+    }
+
+    private ReminderResponse mapReminder(Message message) {
+        if (message.getType() != MessageType.REMINDER || message.getId() == null) {
+            return null;
+        }
+
+        return chatReminderRepository.findByMessageId(message.getId())
+                .map(this::mapReminder)
+                .orElse(null);
+    }
+
+    private ReminderResponse mapReminder(ChatReminder reminder) {
+        return new ReminderResponse(
+                reminder.getId(),
+                reminder.getMessageId(),
+                reminder.getRoom().getId(),
+                reminder.getCreatedByUser().getId(),
+                reminder.getTitle(),
+                reminder.getBody(),
+                reminder.getRemindAt(),
+                reminder.getTimezone(),
+                reminder.getRepeatRule(),
+                reminder.getStatus(),
+                reminder.getTriggeredAt(),
+                reminder.getCompletedAt(),
+                reminder.getCanceledAt()
         );
     }
 
