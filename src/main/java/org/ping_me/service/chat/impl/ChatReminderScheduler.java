@@ -17,11 +17,15 @@ import org.ping_me.utils.mapper.ChatMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.DateTimeException;
 import java.util.UUID;
 
 @Service
@@ -44,15 +48,27 @@ public class ChatReminderScheduler {
     @Scheduled(fixedDelayString = "${app.chat.reminders.scan-delay-ms:10000}")
     @Transactional
     public void triggerDueReminders() {
-        var now = LocalDateTime.now();
-        var dueReminders = chatReminderRepository.findByStatusAndRemindAtLessThanEqual(
+        var now = Instant.now();
+        var pendingReminders = chatReminderRepository.findByStatus(
                 ReminderStatus.PENDING,
-                now,
-                PageRequest.of(0, BATCH_SIZE)
+                PageRequest.of(0, BATCH_SIZE, Sort.by("remindAt").ascending())
         );
 
-        for (ChatReminder reminder : dueReminders) {
-            triggerReminder(reminder, now);
+        for (ChatReminder reminder : pendingReminders) {
+            if (isDue(reminder, now)) {
+                triggerReminder(reminder, LocalDateTime.now());
+            }
+        }
+    }
+
+    private boolean isDue(ChatReminder reminder, Instant now) {
+        try {
+            var zoneId = ZoneId.of(reminder.getTimezone());
+            var reminderInstant = reminder.getRemindAt().atZone(zoneId).toInstant();
+            return !reminderInstant.isAfter(now);
+        } catch (DateTimeException ex) {
+            log.warn("Reminder {} has invalid timezone {}", reminder.getId(), reminder.getTimezone());
+            return !reminder.getRemindAt().isAfter(LocalDateTime.now());
         }
     }
 
