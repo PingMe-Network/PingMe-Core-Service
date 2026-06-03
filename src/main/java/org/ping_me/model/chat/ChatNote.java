@@ -4,7 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,7 +19,6 @@ import lombok.Setter;
                 @Index(name = "idx_chat_note_created_by", columnList = "created_by_user_id")
         }
 )
-@AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
