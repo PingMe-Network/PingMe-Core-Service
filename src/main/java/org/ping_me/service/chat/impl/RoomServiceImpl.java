@@ -743,6 +743,11 @@ public class    RoomServiceImpl implements RoomService {
             settings.setAllowMemberPinMessage(request.getAllowMemberPinMessage());
             changedMessages.add("quyền ghim tin nhắn cho thành viên");
         }
+        if (request.getAllowMemberCreateNote() != null
+                && !request.getAllowMemberCreateNote().equals(settings.getAllowMemberCreateNote())) {
+            settings.setAllowMemberCreateNote(request.getAllowMemberCreateNote());
+            changedMessages.add("quyền tạo ghi chú, nhắc hẹn cho thành viên");
+        }
         if (request.getAllowMemberCreatePoll() != null
                 && !request.getAllowMemberCreatePoll().equals(settings.getAllowMemberCreatePoll())) {
             settings.setAllowMemberCreatePoll(request.getAllowMemberCreatePoll());
@@ -1047,6 +1052,7 @@ public class    RoomServiceImpl implements RoomService {
         settings.setRoomId(room.getId());
         settings.setAllowMemberEditGroupProfile(false);
         settings.setAllowMemberPinMessage(false);
+        settings.setAllowMemberCreateNote(false);
         settings.setAllowMemberCreatePoll(false);
         settings.setAllowMemberSendMessage(true);
         settings.setJoinApprovalEnabled(false);
@@ -1063,13 +1069,14 @@ public class    RoomServiceImpl implements RoomService {
 
     private GroupSettingsResponse toGroupSettingsResponse(GroupSettings settings) {
         String joinLink = Boolean.TRUE.equals(settings.getJoinLinkEnabled())
-                ? "pingme.me/g/" + settings.getJoinLinkToken()
+                ? "https://pingme.me/g/" + settings.getJoinLinkToken()
                 : null;
 
         return new GroupSettingsResponse(
                 settings.getRoomId(),
                 settings.getAllowMemberEditGroupProfile(),
                 settings.getAllowMemberPinMessage(),
+                settings.getAllowMemberCreateNote(),
                 settings.getAllowMemberCreatePoll(),
                 settings.getAllowMemberSendMessage(),
                 settings.getJoinApprovalEnabled(),
