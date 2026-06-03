@@ -45,7 +45,7 @@ public class ChatReminderScheduler {
     @Value("${app.messages.cache.enabled}")
     private boolean cacheEnabled;
 
-    @Scheduled(fixedDelayString = "${app.chat.reminders.scan-delay-ms:10000}")
+    @Scheduled(fixedDelayString = "${app.chat.reminders.scan-delay-ms:1000}")
     @Transactional
     public void triggerDueReminders() {
         var now = Instant.now();
@@ -55,8 +55,12 @@ public class ChatReminderScheduler {
         );
 
         for (ChatReminder reminder : pendingReminders) {
-            if (isDue(reminder, now)) {
-                triggerReminder(reminder, LocalDateTime.now());
+            try {
+                if (isDue(reminder, now)) {
+                    triggerReminder(reminder, LocalDateTime.now());
+                }
+            } catch (RuntimeException ex) {
+                log.error("Failed to trigger reminder {}: {}", reminder.getId(), ex.getMessage(), ex);
             }
         }
     }
@@ -75,6 +79,7 @@ public class ChatReminderScheduler {
     private void triggerReminder(ChatReminder reminder, LocalDateTime triggeredAt) {
         reminder.setStatus(ReminderStatus.TRIGGERED);
         reminder.setTriggeredAt(triggeredAt);
+        log.info("Triggering reminder {} for room {} at {}", reminder.getId(), reminder.getRoom().getId(), triggeredAt);
 
         messageRepository.findById(reminder.getMessageId())
                 .ifPresentOrElse(
@@ -88,11 +93,15 @@ public class ChatReminderScheduler {
 
     private void syncReminderMessage(Message message) {
         if (cacheEnabled) {
-            messageCachingService.updateMessage(
-                    message.getRoomId(),
-                    message.getId(),
-                    chatMapper.toMessageResponseDto(message)
-            );
+            try {
+                messageCachingService.updateMessage(
+                        message.getRoomId(),
+                        message.getId(),
+                        chatMapper.toMessageResponseDto(message)
+                );
+            } catch (RuntimeException ex) {
+                log.warn("Skipping reminder message cache update for {}: {}", message.getId(), ex.getMessage());
+            }
         }
 
         eventPublisher.publishEvent(new MessageUpdatedEvent(message));
@@ -115,10 +124,14 @@ public class ChatReminderScheduler {
         room.setLastMessageAt(alertMessage.getCreatedAt());
 
         if (cacheEnabled) {
-            messageCachingService.cacheNewMessage(
-                    room.getId(),
-                    chatMapper.toMessageResponseDto(alertMessage)
-            );
+            try {
+                messageCachingService.cacheNewMessage(
+                        room.getId(),
+                        chatMapper.toMessageResponseDto(alertMessage)
+                );
+            } catch (RuntimeException ex) {
+                log.warn("Skipping reminder alert cache write for room {}: {}", room.getId(), ex.getMessage());
+            }
         }
 
         eventPublisher.publishEvent(new MessageCreatedEvent(alertMessage));
