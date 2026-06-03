@@ -70,7 +70,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -535,13 +538,10 @@ public class MessageServiceImpl implements MessageService {
         requireCanCreateNote(room, roomParticipant);
         validateReplyMessage(request.getRepliedMessageId(), roomId);
 
-        if (request.getRemindAt() == null || !request.getRemindAt().isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Thời gian nhắc hẹn phải nằm trong tương lai");
-        }
-
         String title = request.getTitle().trim();
         String body = request.getBody().trim();
         String timezone = request.getTimezone().trim();
+        validateReminderTime(request.getRemindAt(), timezone);
         String repeatRule = request.getRepeatRule() == null || request.getRepeatRule().isBlank()
                 ? "NONE"
                 : request.getRepeatRule().trim();
@@ -1105,6 +1105,21 @@ public class MessageServiceImpl implements MessageService {
             return UUID.fromString(clientMsgIdRaw);
         } catch (Exception exception) {
             throw new IllegalArgumentException("clientMsg không hợp lệ");
+        }
+    }
+
+    private void validateReminderTime(LocalDateTime remindAt, String timezone) {
+        if (remindAt == null) {
+            throw new IllegalArgumentException("Thời gian nhắc hẹn phải nằm trong tương lai");
+        }
+
+        try {
+            var reminderInstant = remindAt.atZone(ZoneId.of(timezone)).toInstant();
+            if (!reminderInstant.isAfter(Instant.now())) {
+                throw new IllegalArgumentException("Thời gian nhắc hẹn phải nằm trong tương lai");
+            }
+        } catch (DateTimeException ex) {
+            throw new IllegalArgumentException("Múi giờ không hợp lệ");
         }
     }
 
