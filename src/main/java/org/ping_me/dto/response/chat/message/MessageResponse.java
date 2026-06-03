@@ -39,4 +39,6 @@ public class MessageResponse {
     private ForwardMetadataResponse forwardMetadata;
     private RepliedMessageResponse repliedMessage;
     private PollResponse poll;
+    private NoteResponse note;
+    private ReminderResponse reminder;
 }
